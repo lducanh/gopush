@@ -1,0 +1,178 @@
+/* inGo — design tokens.
+   Nguồn: GoMax Console design system. Khác biệt duy nhất: màu chủ đạo đổi từ
+   xanh #0191FB sang đen trung tính, phối cùng xám nhạt và trắng. */
+
+:root {
+  /* Nền & bề mặt */
+  --bg-page: #ffffff;
+  --bg-subtle: #f9f9fb;
+  --bg-muted: #f0f0f3;
+  --bg-hover: rgba(0, 0, 51, 0.06);
+  --surface-inverse: #1c2024;
+  --on-inverse: #ffffff;
+
+  /* Đường kẻ */
+  --line: #e8e8ec;
+  --line-strong: #e0e1e6;
+
+  /* Chữ */
+  --ink: rgba(0, 0, 0, 0.95);
+  --ink-secondary: rgba(0, 0, 0, 0.7);
+  --ink-muted: rgba(0, 0, 0, 0.5);
+  --ink-disabled: rgba(0, 8, 48, 0.275);
+
+  /* Màu chủ đạo — đen */
+  --primary: #18181b;
+  --primary-hover: #000000;
+  --primary-text: #18181b;
+  --on-primary: #ffffff;
+  --primary-soft: #f3f3f5;
+  --primary-border: #dcdce1;
+  --focus-ring: #18181b;
+
+  /* Trạng thái — giữ nguyên theo hệ thống gốc */
+  --success: #30a46c;
+  --success-soft: #e6f6eb;
+  --success-text: #218358;
+  --warning: #f76b15;
+  --warning-soft: #ffefd6;
+  --warning-text: #cc4e00;
+  --danger: #e5484d;
+  --danger-soft: #feebec;
+  --danger-text: #ce2c31;
+
+  /* Pastel — dùng tiết kiệm, chỉ cho biểu đồ và thẻ nhấn */
+  --pastel-sky: #c4d7ef;
+  --pastel-sage: #c8ddcd;
+  --pastel-sand: #eddfc6;
+  --pastel-lilac: #d6d0ea;
+  --pastel-blush: #efd6d9;
+  --pastel-mist: #e4e4e9;
+  /* chữ trên nền pastel — cố định cho cả 2 theme vì pastel luôn đủ sáng */
+  --on-pastel: #18181b;
+
+  /* Ô icon: nền rất nhạt + icon đậm cùng tông (đạt >= 4.5:1) */
+  --soft-sky: #e6eefa;    --soft-sky-ink: #2d5486;
+  --soft-sage: #e4f0e8;   --soft-sage-ink: #2c6245;
+  --soft-sand: #f6ecd9;   --soft-sand-ink: #7a5718;
+  --soft-lilac: #ebe7f7;  --soft-lilac-ink: #4c3f86;
+  --soft-blush: #fae8ea;  --soft-blush-ink: #8e3a45;
+  --soft-mist: #eeeef2;   --soft-mist-ink: #4b4c56;
+
+  /* Chuỗi màu biểu đồ — than chì dẫn dắt, pastel trầm bổ trợ.
+     Chuỗi chính luôn là màu than chì để giao diện vẫn giữ tông đen. */
+  --chart-1: #26272b;   /* than chì   */
+  --chart-2: #7f9fc9;   /* lam khói   */
+  --chart-3: #8ab39b;   /* lá khói    */
+  --chart-4: #d3b184;   /* cát        */
+  --chart-5: #a49bc6;   /* oải hương  */
+  --chart-6: #c9959e;   /* hồng phấn  */
+  --chart-7: #8fb6ba;   /* ngọc nhạt  */
+  --chart-ink: #26272b;
+  /* ba mức của tông than chì, dùng cho xếp hạng và phễu */
+  --chart-1-mid: #9a9ba3;
+  --chart-1-soft: #d8d9de;
+  --chart-grid: rgba(0, 0, 0, 0.07);
+
+  --overlay: rgba(0, 0, 0, 0.45);
+
+  /* Chữ */
+  --font-sans: Roboto, Inter, -apple-system, "Segoe UI", system-ui, sans-serif;
+  --font-mono: "Roboto Mono", ui-monospace, Menlo, monospace;
+
+  /* Khoảng cách */
+  --space-1: 4px;
+  --space-1-5: 6px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* Bo góc */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-pill: 999px;
+
+  /* Bóng */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-pop: 0 8px 24px rgba(0, 0, 0, 0.12);
+
+  /* Kích thước */
+  --rail-width: 76px;
+  --sidebar-width: 224px;
+  --sidebar-collapsed: 0px;
+  --header-height: 56px;
+  --control-sm: 28px;
+  --control-md: 32px;
+  --row-height: 56px;
+  --icon-size: 16px;
+  --drawer-width: 440px;
+}
+
+:root[data-theme="dark"] {
+  --bg-page: #111113;
+  --bg-subtle: #18191b;
+  --bg-muted: #212225;
+  --bg-hover: rgba(221, 234, 248, 0.08);
+  --surface-inverse: #edeef0;
+  --on-inverse: #1c2024;
+
+  --line: #2e3135;
+  --line-strong: #363a3f;
+
+  --ink: rgba(255, 255, 255, 0.95);
+  --ink-secondary: rgba(255, 255, 255, 0.7);
+  --ink-muted: rgba(255, 255, 255, 0.52);
+  --ink-disabled: rgba(255, 255, 255, 0.3);
+
+  --primary: #fafafa;
+  --primary-hover: #ffffff;
+  --primary-text: #fafafa;
+  --on-primary: #18181b;
+  --primary-soft: #26272b;
+  --primary-border: #3a3c41;
+  --focus-ring: #fafafa;
+
+  --success: #33b074;
+  --success-soft: #132d21;
+  --success-text: #3dd68c;
+  --warning: #ff801f;
+  --warning-soft: #331e0b;
+  --warning-text: #ffa057;
+  --danger: #ec5d5e;
+  --danger-soft: #3b1219;
+  --danger-text: #ff9592;
+
+  --pastel-sky: #6d87ab;
+  --pastel-sage: #6f9279;
+  --pastel-sand: #a8926a;
+  --pastel-lilac: #8b83ab;
+  --pastel-blush: #a87f84;
+  --pastel-mist: #4a4b52;
+
+  --soft-sky: #1d2a3a;    --soft-sky-ink: #9cc2ec;
+  --soft-sage: #1b2c22;   --soft-sage-ink: #92cba6;
+  --soft-sand: #2e2617;   --soft-sand-ink: #d9b878;
+  --soft-lilac: #252039;  --soft-lilac-ink: #b6abe0;
+  --soft-blush: #331b1f;  --soft-blush-ink: #e2a1a8;
+  --soft-mist: #24252a;   --soft-mist-ink: #a9aab4;
+
+  --chart-1: #e9e9ec;
+  --chart-2: #7ea0cd;
+  --chart-3: #7fae95;
+  --chart-4: #c8a878;
+  --chart-5: #9a90bf;
+  --chart-6: #c08e97;
+  --chart-7: #86adb1;
+  --chart-ink: #e9e9ec;
+  --chart-1-mid: #8a8b93;
+  --chart-1-soft: #4a4b52;
+  --chart-grid: rgba(255, 255, 255, 0.09);
+
+  --overlay: rgba(0, 0, 0, 0.6);
+  --shadow-pop: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
