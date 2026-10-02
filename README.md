@@ -46,15 +46,15 @@ assets/img/             logo GOPUSH, favicon, banner trang chủ, ảnh trang đ
 ## Thiết kế
 
 Toàn bộ CSS dựng theo design system **GoMax Console**: phẳng, gọn, nhiều thông tin,
-nền trung tính và **một màu nhấn teal** duy nhất. Tên token trong `tokens.css` giữ đúng
+nền trung tính và **Oracle Red** làm màu nhấn. Tên token trong `tokens.css` giữ đúng
 như bản gốc (`bg-topbar`, `bg-canvas`, `accent`, `text-secondary`, `radius-md`…); token
 nào bản gốc chưa có thì ghi chú "bổ sung" ngay trong file.
 
 | Nhóm | Giá trị chính |
 | --- | --- |
-| Khung | top bar `#121415` · canvas `#f8f8f9` · card / sidebar `#ffffff` |
-| Chữ | `#121415` chính · `#6d6e70` phụ · `#8a8a8a` meta 12px |
-| Nhấn | `accent` `#009995` (progress, banner) · `accent-dark` `#017976` (link, mục chọn, focus) · `accent-soft` `#e3f5f4` (nền mục chọn) |
+| Khung | top bar Oracle Bark `#312D2A` · canvas Neutral 30 `#F1EFED` · card / sidebar `#ffffff` |
+| Chữ | `#312D2A` chính · Slate `#697778` phụ · `#7d7873` meta 12px |
+| Nhấn | Oracle Red `#C74634` (progress, nút, link) · `#9D3428` (focus, mục chọn) · Neutral 30 `#F1EFED` (nền mục chọn) |
 | Viền | `border` `#d3d4d5` cho input / nút · `border-light` `#ececed` cho card / divider |
 | Chữ | font hệ thống, 14px/22px, **chỉ hai độ đậm 400 và 500** |
 | Bo góc | 4px tag · 6px nút, input, mục menu · 8px card · pill cho badge |
@@ -62,31 +62,31 @@ nào bản gốc chưa có thì ghi chú "bổ sung" ngay trong file.
 
 Quy ước:
 
-- **Nút**: mặc định là outline trung tính 36px. Nút chính (`gm-btn-primary`) nền **teal**
+- **Nút**: mặc định là outline trung tính 36px. Nút chính (`gm-btn-primary`) nền **Oracle Red**
   `accent-dark` — màu chủ đạo, như nút "Thêm tài khoản nhà quảng cáo" của Trung tâm doanh
   nghiệp TikTok; tối đa một nút mỗi vùng. Nút nhỏ `gm-btn-sm` nền xám, không viền (Xem chi
-  tiết, Hồ sơ); `gm-btn-soft` nền teal nhạt cho hành động nhanh trong bảng (Mời, Xem lỗi).
+  tiết, Hồ sơ); `gm-btn-soft` nền Neutral 30 cho hành động nhanh trong bảng (Mời, Xem lỗi).
 - **Trạng thái trong bảng** là chấm màu + chữ thường, không nền ("● Đã phê duyệt"); ngoài
   bảng mới dùng tag có nền.
-- **Ô số liệu** (KPI, stat tile) cùng một kiểu trên mọi trang: nền canvas, icon teal, số
+- **Ô số liệu** (KPI, stat tile) cùng một kiểu trên mọi trang: nền canvas, icon Oracle Red, số
   20px, dòng so sánh kỳ trước.
 - **Bảng**: cột ngày giờ, người, SKU, trạng thái giữ một dòng (`U.table` tự gắn class `nw`
   theo tên cột); ô Creator và sản phẩm tối đa 2 dòng, phần dư cắt bằng … và hiện đủ khi rê chuột.
 - **Mục đang chọn** (menu, tab cấp hai, checkbox, radio, trang hiện tại, bước wizard)
-  luôn dùng teal. Tab chính dùng vạch 2px màu chữ chính, giống trang Tài khoản của
+  luôn dùng Oracle Red. Tab chính dùng vạch 2px màu chữ chính, giống trang Tài khoản của
   Trung tâm doanh nghiệp TikTok.
-- **Link** chữ teal đậm, gạch chân khi rê chuột.
+- **Link** chữ Oracle Red đậm, gạch chân khi rê chuột.
 - **Tag** 22px bo 4px, nền nhạt + chữ đậm cùng tông: xanh lá thành công, cam cảnh báo,
-  đỏ lỗi, teal cho loại.
+  đỏ Oracle cho lỗi, Slate/Pine cho loại.
 - **Thẻ KPI / stat tile**: nền canvas, không viền, số 20px/500 tabular-nums.
-- **Biểu đồ**: đường cong mềm, teal cho chuỗi chính, oải hương `--chart-2` cho chuỗi so
+- **Biểu đồ**: đường cong mềm, Oracle Red cho chuỗi chính, Pine/Ocean/Plum cho chuỗi so
   sánh (như biểu đồ Chi phí / Lần hiển thị của TikTok). Biểu đồ đường luôn đặt cạnh một
   donut cơ cấu theo tỉ lệ 2/3 – 1/3 để chữ trục không bị phóng to. Sparkline, phễu và bảng xếp hạng chỉ dùng một
-  tông teal, nhạt dần theo thứ hạng.
-- Chữ đặt trên nền teal dùng `--on-accent`: trắng ở theme sáng, gần đen ở theme tối để
+  tông Oracle Red, nhạt dần theo thứ hạng.
+- Chữ đặt trên nền Oracle Red dùng `--on-accent`: trắng ở theme sáng, gần Bark ở theme tối để
   đủ tương phản.
 
-**Theme tối** là phần bổ sung (bộ gốc chỉ có theme sáng): cùng cấu trúc ba lớp, teal
+**Theme tối** là phần bổ sung (bộ gốc chỉ có theme sáng): cùng cấu trúc ba lớp, Oracle Red
 sáng hơn một bậc.
 
 **Icon** dùng bộ **Lucide** (`lucide-static` 0.544, giấy phép ISC), nhúng sẵn trong
@@ -94,15 +94,14 @@ sáng hơn một bậc.
 
 ## Logo
 
-`assets/img/logo-gopush.png` là logo GOPUSH TikTok (chữ trắng, chấm teal, nền trong
-suốt), cắt sát chữ từ file gốc `logo-gopush.webp`. Trên top bar tối dùng nguyên bản.
-Trên nền sáng (hero trang giới thiệu, thẻ đăng nhập) thêm class `ig-logo--ink`: CSS đảo
-độ sáng rồi xoay hue 180° nên chữ thành màu đậm mà chấm vẫn giữ tông teal.
+`assets/img/logo-gomax.webp` là logo **GOPUSH · BY GOMAX DIGITAL** lấy từ file GOMAX
+được chỉ định. Trên top bar Oracle Bark tối dùng nguyên bản. Trên nền sáng (hero trang
+giới thiệu, thẻ đăng nhập) thêm class `ig-logo--ink` để đảo độ sáng logo.
 
 ## Khung ứng dụng
 
 ```
-top bar tối 56px · logo | 🇻🇳 VN 1300'S Coffee ● ⌄ ....... [🔍 Tìm hoặc hỏi AI… ⌘K] ✦ 🔔⁷ [🐻 ⌄]
+top bar Oracle Bark 56px · logo | 🇻🇳 VN 1300'S Coffee ● ⌄ ....... [🔍 Tìm hoặc hỏi AI… ⌘K] ✦ 🔔⁷ [🐻 ⌄]
                           828/4.000 lời mời hôm nay ▬
 sidebar 240px    · Nghiệp vụ: Tổng quan · Creator · Hợp tác · Hàng mẫu · Kết quả
                    Quản trị: Cài đặt doanh nghiệp  (bấm module để mở / thu menu con)
@@ -110,7 +109,7 @@ nội dung         · nền canvas; tiêu đề 24px + nhãn phạm vi nằm ngo
 panel AI 400px   · mở bên phải từ ô tìm hoặc thanh hỏi dưới bảng, nội dung vẫn thao tác được
 ```
 
-**Topbar gọn.** Logo, phạm vi shop (dòng dưới là hạn mức lời mời hôm nay, chuyển cam khi
+**Topbar gọn.** Logo, phạm vi shop (dòng dưới là hạn mức lời mời hôm nay, chuyển Brand Yellow khi
 quá 80%), ô nhỏ **Tìm hoặc hỏi AI**, hai icon quan trọng và avatar.
 
 - Ô tìm (⌘K / Ctrl K): gõ ra kết quả theo nhóm Creator · Chiến dịch · Trang, cộng dòng
@@ -205,7 +204,7 @@ Không xếp hết điều kiện ra màn hình. Mỗi trang chọn một mức 
 | Báo cáo custom | panel mở sẵn, chia 2 nhóm Phạm vi / Chỉ số |
 
 Control trong thanh lọc dùng cỡ nhỏ 32px (`.gm-input-sm`) để một hàng chứa đủ.
-Panel nâng cao đóng/mở bằng `data-act="filters"`, nút đổi viền và chữ sang teal khi đang mở.
+Panel nâng cao đóng/mở bằng `data-act="filters"`, nút đổi viền và chữ sang Oracle Red khi đang mở.
 
 ## Đường dẫn
 
@@ -447,10 +446,8 @@ từng lời mời.
   định nên lần nào cũng giống nhau.
 - Dữ liệu lưu ở khóa `gopush.db.v7`. Khi đổi cấu trúc, khóa được nâng phiên bản và
   các khóa cũ tự xóa lúc nạp, nên không phải xóa cache tay.
-- Logo là bộ khóa **GOPUSH · BY GOMAX DIGITAL**, dùng **đúng file gốc 2000×600**,
-  không xử lý lại ảnh. File có sẵn nền trắng nên ở theme tối được đặt trên một nền
-  trắng bo góc (`:root[data-theme="dark"] .ig-logo`) thay vì `filter: invert(1)` —
-  invert sẽ biến chữ đỏ cam của GoMax thành xanh lơ.
+- Logo là bộ khóa **GOPUSH · BY GOMAX DIGITAL**, dùng file `assets/img/logo-gomax.webp`
+  lấy từ URL GOMAX được chỉ định, không xử lý lại ảnh.
 - **Chống cache**: mọi file tĩnh gắn `?v=`. Đổi ảnh hoặc sửa CSS/JS thì tăng số này
   ở `index.html` và ở `ASSET_V` trong `ui.js` cho khớp, trình duyệt sẽ tải bản mới.
 - `assets/img/banner.png` là banner GOPUSH, đã thu còn 1280px cho nhẹ. Thay banner

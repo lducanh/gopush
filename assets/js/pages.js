@@ -19,9 +19,9 @@
     ['var(--soft-sand)', 'var(--soft-sand-ink)'], ['var(--soft-lilac)', 'var(--soft-lilac-ink)'],
     ['var(--soft-blush)', 'var(--soft-blush-ink)'], ['var(--soft-mist)', 'var(--soft-mist-ink)']
   ];
-  /* sparkline: một màu nhấn teal cho mọi thẻ, theo GoMax Console */
+  /* sparkline: một màu nhấn Oracle Red cho mọi thẻ, theo GoMax Console */
   var TONE_LINE = ['var(--accent)'];
-  /* thang teal nhạt dần, dùng cho bảng xếp hạng */
+  /* thang Oracle Red nhạt dần, dùng cho bảng xếp hạng */
   function rankColor(i) {
     return i === 0 ? 'var(--chart-1)' : (i < 3 ? 'var(--chart-1-mid)' : 'var(--chart-1-soft)');
   }

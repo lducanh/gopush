@@ -5,7 +5,7 @@
 
   /* Đổi số này mỗi khi thay ảnh hoặc sửa CSS/JS: trình duyệt sẽ tải lại thay vì
      dùng bản cũ trong cache. Nhớ đổi kèm ?v= trong index.html cho khớp. */
-  var ASSET_V = '?v=7';
+  var ASSET_V = '?v=8';
   function img(name) { return 'assets/img/' + name + ASSET_V; }
 
   function esc(s) {
@@ -48,11 +48,10 @@
       '</svg></span>';
   }
 
-  /* Logo GOPUSH gốc là chữ trắng trên nền trong suốt, hợp với top bar tối.
-     Trên nền sáng thêm class ig-logo--ink: CSS đảo độ sáng nhưng giữ hue,
-     chữ thành màu đậm còn chấm vẫn là teal. */
+  /* Logo GOPUSH · BY GOMAX DIGITAL là chữ trắng trên nền trong suốt,
+     hợp với top bar Oracle Bark tối. Trên nền sáng thêm class ig-logo--ink. */
   function logo(alt, onLight) {
-    return '<img class="ig-logo' + (onLight ? ' ig-logo--ink' : '') + '" src="' + img('logo-gopush.png') + '" alt="' + attr(alt || 'GOPUSH') + '">';
+    return '<img class="ig-logo' + (onLight ? ' ig-logo--ink' : '') + '" src="' + img('logo-gomax.webp') + '" alt="' + attr(alt || 'GOPUSH · BY GOMAX DIGITAL') + '">';
   }
 
   function pageHead(o) {

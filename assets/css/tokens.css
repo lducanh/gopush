@@ -1,80 +1,79 @@
 /* GOPUSH — design tokens.
    Nguồn: design system GoMax Console (tokens.json). Phẳng, gọn, nhiều thông tin,
-   nền trung tính và một màu nhấn teal duy nhất. Tên token giữ đúng như bản gốc;
+   tông Oracle/Redwood với Oracle Red và Oracle Bark làm nền tảng. Tên token giữ đúng như bản gốc;
    các token đánh dấu "bổ sung" không có trong bản gốc, được suy ra từ nó để phủ
    những phần GOPUSH cần mà bộ gốc chưa có (cảnh báo, biểu đồ, theme tối). */
 
 :root {
   /* Khung ứng dụng */
-  --bg-topbar: #121415;
+  --bg-topbar: #312d2a;
   --bg-topbar-pill: rgba(255, 255, 255, 0.12);
   --bg-topbar-pill-hover: rgba(255, 255, 255, 0.2);   /* bổ sung */
-  --bg-canvas: #f8f8f9;
+  --bg-canvas: #f1efed;
   --bg-surface: #ffffff;
-  --bg-subtle: #f0f0f0;
-  --bg-muted: #ebebeb;
-  --bg-hover: rgba(18, 20, 21, 0.05);                 /* bổ sung: hover trên mọi nền */
-  --bg-card-dark: #404142;
+  --bg-subtle: #f7f5f3;
+  --bg-muted: #e6e1dd;
+  --bg-hover: rgba(49, 45, 42, 0.06);                 /* bổ sung: hover trên mọi nền */
+  --bg-card-dark: #4a433e;
 
   /* Chữ */
-  --text-primary: #121415;
-  --text-secondary: #6d6e70;
-  --text-tertiary: #8a8a8a;
-  --text-disabled: rgba(18, 20, 21, 0.3);             /* bổ sung */
+  --text-primary: #312d2a;
+  --text-secondary: #697778;
+  --text-tertiary: #7d7873;
+  --text-disabled: rgba(49, 45, 42, 0.32);            /* bổ sung */
   --text-inverse: #ffffff;
   --text-on-topbar-muted: rgba(255, 255, 255, 0.72);  /* bổ sung */
 
   /* Đường kẻ */
-  --border: #d3d4d5;
-  --border-light: #ececed;
+  --border: #d4cec9;
+  --border-light: #e6e1dd;
 
-  /* Màu nhấn duy nhất */
-  --accent: #009995;
-  --accent-dark: #017976;
-  --accent-hover: #015f5c;                            /* bổ sung */
-  --accent-bright: #0fd9d0;
-  --accent-soft: #e3f5f4;
-  --accent-border: #a9dcd9;                           /* bổ sung: viền chip / chọn */
-  --on-accent: #ffffff;                               /* bổ sung: chữ trên nền teal */
+  /* Oracle Red / Bark */
+  --accent: #c74634;
+  --accent-dark: #9d3428;
+  --accent-hover: #81291f;                            /* bổ sung */
+  --accent-bright: #e36b58;
+  --accent-soft: #f1efed;
+  --accent-border: #d9aaa1;                           /* bổ sung: viền chip / chọn */
+  --on-accent: #ffffff;                               /* bổ sung: chữ trên nền Oracle Red */
 
   /* Trạng thái */
-  --success: #00a870;
-  --success-bg: #e6f9ed;
-  --success-soft: #e6f9ed;
-  --success-text: #057e33;
-  --warning: #e37318;                                 /* bổ sung */
-  --warning-soft: #fff1e3;                            /* bổ sung */
-  --warning-text: #a84f00;                            /* bổ sung */
-  --danger: #ca242e;
-  --danger-soft: #fdecee;                             /* bổ sung */
-  --danger-text: #ca242e;
-  --new-bg: #eceafd;
-  --new-text: #5a4fcf;
+  --success: #5c926d;
+  --success-bg: #e8f0e9;
+  --success-soft: #e8f0e9;
+  --success-text: #356346;
+  --warning: #f0cc72;                                 /* Oracle Brand Yellow */
+  --warning-soft: #fbf3dc;                            /* bổ sung */
+  --warning-text: #6d4d0a;                            /* bổ sung */
+  --danger: #c74634;
+  --danger-soft: #f8e8e4;                             /* bổ sung */
+  --danger-text: #a33527;
+  --new-bg: #eee9f1;
+  --new-text: #6e5579;
 
-  /* Ô icon: dựng lại từ token trạng thái của hệ thống, không thêm hue mới */
-  --soft-sky: var(--accent-soft);   --soft-sky-ink: var(--accent-dark);
+  /* Ô icon: dùng các màu phụ Redwood, không thêm hue ngoài hệ */
+  --soft-sky: #e8f1f4;               --soft-sky-ink: #3e7183;
   --soft-sage: var(--success-bg);   --soft-sage-ink: var(--success-text);
   --soft-sand: var(--warning-soft); --soft-sand-ink: var(--warning-text);
   --soft-lilac: var(--new-bg);      --soft-lilac-ink: var(--new-text);
   --soft-blush: var(--danger-soft); --soft-blush-ink: var(--danger-text);
   --soft-mist: var(--bg-subtle);    --soft-mist-ink: var(--text-secondary);
-  --on-pastel: #121415;
+  --on-pastel: #312d2a;
 
-  /* Biểu đồ (bổ sung): teal dẫn dắt, oải hương cho chuỗi so sánh
-     như biểu đồ Chi phí / Lần hiển thị của Trung tâm doanh nghiệp */
-  --chart-1: #017976;
-  --chart-2: #8b84f0;
-  --chart-3: #4fc1bc;
-  --chart-4: #d9a55b;
-  --chart-5: #0b4f6c;
-  --chart-6: #e3868c;
-  --chart-7: #a7a9ad;
-  --chart-ink: #121415;
-  --chart-1-mid: #4fa9a6;
-  --chart-1-soft: #bfe3e1;
-  --chart-grid: #ececed;
+  /* Biểu đồ: màu phụ Redwood */
+  --chart-1: #c74634;
+  --chart-2: #5c926d;
+  --chart-3: #558ea4;
+  --chart-4: #deb068;
+  --chart-5: #846a92;
+  --chart-6: #a36472;
+  --chart-7: #697778;
+  --chart-ink: #312d2a;
+  --chart-1-mid: #d98778;
+  --chart-1-soft: #edc7c0;
+  --chart-grid: #e6e1dd;
 
-  --overlay: rgba(18, 20, 21, 0.45);
+  --overlay: rgba(49, 45, 42, 0.45);
 
   /* Chữ: một họ font hệ thống, chỉ dùng 400 và 500 */
   --font-sans: -apple-system, system-ui, "Segoe UI", Roboto, Ubuntu, "Helvetica Neue", Helvetica, Arial, sans-serif;
@@ -112,57 +111,56 @@
   --drawer-width: 440px;
 }
 
-/* Theme tối (bổ sung): bộ gốc chỉ có theme sáng; bản tối giữ cùng cấu trúc
-   ba lớp và cùng màu nhấn teal, sáng hơn một bậc để đủ tương phản. */
+/* Theme tối: cùng cấu trúc ba lớp và Oracle Red sáng hơn để đủ tương phản. */
 :root[data-theme="dark"] {
-  --bg-topbar: #0b0c0d;
-  --bg-canvas: #141617;
-  --bg-surface: #1c1e20;
-  --bg-subtle: #26282a;
-  --bg-muted: #2d3032;
+  --bg-topbar: #1d1917;
+  --bg-canvas: #211e1c;
+  --bg-surface: #2b2724;
+  --bg-subtle: #37312d;
+  --bg-muted: #433b36;
   --bg-hover: rgba(255, 255, 255, 0.06);
-  --bg-card-dark: #303234;
+  --bg-card-dark: #514740;
 
-  --text-primary: #f1f2f3;
-  --text-secondary: #a9abae;
-  --text-tertiary: #8c8f93;
+  --text-primary: #f1efed;
+  --text-secondary: #c7c0ba;
+  --text-tertiary: #a49b94;
   --text-disabled: rgba(255, 255, 255, 0.3);
 
-  --border: #3a3d40;
-  --border-light: #2b2e30;
+  --border: #5a514b;
+  --border-light: #3d3733;
 
-  --accent: #14b3ae;
-  --accent-dark: #2cc4be;
-  --accent-hover: #5dd6d1;
-  --accent-soft: #123331;
-  --accent-border: #1f5a57;
-  --on-accent: #0b0c0d;
+  --accent: #e36b58;
+  --accent-dark: #f08a79;
+  --accent-hover: #ffab9d;
+  --accent-soft: #48231f;
+  --accent-border: #81463c;
+  --on-accent: #1d1917;
 
-  --success: #2fc18a;
-  --success-bg: #0f2e22;
-  --success-soft: #0f2e22;
-  --success-text: #4fd49d;
-  --warning: #f08a3a;
-  --warning-soft: #33220f;
-  --warning-text: #f5a766;
-  --danger: #ef5b63;
-  --danger-soft: #3a171b;
-  --danger-text: #ff8a90;
-  --new-bg: #25214a;
-  --new-text: #b3acf5;
-  --on-pastel: #121415;
+  --success: #83b98f;
+  --success-bg: #203526;
+  --success-soft: #203526;
+  --success-text: #a8d1ad;
+  --warning: #f0cc72;
+  --warning-soft: #463718;
+  --warning-text: #f5d98d;
+  --danger: #e36b58;
+  --danger-soft: #48231f;
+  --danger-text: #ffab9d;
+  --new-bg: #392d3e;
+  --new-text: #d0b8d7;
+  --on-pastel: #f1efed;
 
-  --chart-1: #2cc4be;
-  --chart-2: #9d97f5;
-  --chart-3: #7fd9d4;
-  --chart-4: #d9ae70;
-  --chart-5: #5aa3c4;
-  --chart-6: #ea9aa0;
-  --chart-7: #7c7f84;
-  --chart-ink: #f1f2f3;
-  --chart-1-mid: #218f8b;
-  --chart-1-soft: #1c4644;
-  --chart-grid: #2b2e30;
+  --chart-1: #e36b58;
+  --chart-2: #83b98f;
+  --chart-3: #82b8c7;
+  --chart-4: #f0cc72;
+  --chart-5: #b89ac3;
+  --chart-6: #d395a5;
+  --chart-7: #a9b8ba;
+  --chart-ink: #f1efed;
+  --chart-1-mid: #b64c3d;
+  --chart-1-soft: #6f342c;
+  --chart-grid: #3d3733;
 
   --overlay: rgba(0, 0, 0, 0.6);
   --shadow-pop: 0 6px 20px rgba(0, 0, 0, 0.5);
