@@ -1,4 +1,4 @@
-/* inGo — Điều chỉnh kế hoạch: bốn tác vụ xử lý hàng loạt trên các lời mời đã tạo.
+/* GOPUSH — Điều chỉnh kế hoạch: bốn tác vụ xử lý hàng loạt trên các lời mời đã tạo.
 
    TikTok chỉ cho sửa từng lời mời một. Ở đây chọn một lần nhiều lời mời rồi
    chạy chung một tác vụ: dọn dẹp, bù Creator, gia hạn – đổi tên, thêm sản phẩm.

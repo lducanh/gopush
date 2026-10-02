@@ -1,4 +1,4 @@
-/* inGo — bộ dựng HTML dùng lại cho mọi màn hình. Không phụ thuộc framework.
+/* GOPUSH — bộ dựng HTML dùng lại cho mọi màn hình. Không phụ thuộc framework.
    Phần tử có data-* được app.js bắt sự kiện tập trung. */
 (function (global) {
   'use strict';
@@ -48,15 +48,17 @@
       '</svg></span>';
   }
 
-  /* Dùng đúng file logo gốc của thương hiệu, không xử lý lại ảnh.
-     Ảnh có sẵn nền trắng nên ở theme tối phải đặt trên một nền trắng bo góc,
-     nếu không mảng trắng trong ảnh sẽ trông như lỗi. */
-  function logo(alt) {
-    return '<img class="ig-logo" src="' + img('logo-wordmark.png') + '" alt="' + attr(alt || 'inGo') + '">';
+  /* Logo GOPUSH gốc là chữ trắng trên nền trong suốt, hợp với top bar tối.
+     Trên nền sáng thêm class ig-logo--ink: CSS đảo độ sáng nhưng giữ hue,
+     chữ thành màu đậm còn chấm vẫn là teal. */
+  function logo(alt, onLight) {
+    return '<img class="ig-logo' + (onLight ? ' ig-logo--ink' : '') + '" src="' + img('logo-gopush.png') + '" alt="' + attr(alt || 'GOPUSH') + '">';
   }
 
   function pageHead(o) {
-    return '<div class="ig-page-head"><div><h1>' + esc(o.title) + '</h1>' +
+    return '<div class="ig-page-head"><div>' +
+      (o.crumb ? '<div class="ig-crumb">' + o.crumb + '</div>' : '') +
+      '<h1>' + esc(o.title) + (o.note || '') + '</h1>' +
       (o.desc ? '<p>' + esc(o.desc) + '</p>' : '') + '</div>' +
       (o.actions ? '<div class="ig-head-actions">' + o.actions + '</div>' : '') + '</div>';
   }
@@ -146,6 +148,10 @@
       '</div>' + adv + chips + '</div>';
   }
 
+  /* cột ngày giờ, người phụ trách, mã: giữ một dòng để hàng bảng không cao vọt */
+  var NOWRAP = /lúc|SKU|Ký nhận|Nội dung|Đồng bộ|Ngày|Bắt đầu|Kết thúc|Hạn|Thời điểm|Đăng nhập|Cập nhật|Người tạo|Phụ trách|Người được giao|Mã /;
+  function colCls(c) { return (c.cls || '') + (c.t && NOWRAP.test(c.t) ? ' nw' : ''); }
+
   function table(o) {
     var cols = o.cols, rows = o.rows, s = o.sel || {};
     var allOn = o.check && rows.length && rows.every(function (r) { return s[r.id]; });
@@ -154,11 +160,11 @@
       cols.map(function (c) {
         var tip = c.th ? ' title="' + attr(c.th) + '"' : '';
         if (!c.s) {
-          return '<th class="' + (c.cls || '') + '"' + tip + '>' + esc(c.t) +
+          return '<th class="' + colCls(c) + '"' + tip + '>' + esc(c.t) +
             (c.th ? global.icon('help', 'sw') : '') + '</th>';
         }
         var on = o.sort === c.s;
-        return '<th class="' + (c.cls || '') + '"' + tip + '><button class="gm-sort' + (on ? ' on' : '') +
+        return '<th class="' + colCls(c) + '"' + tip + '><button class="gm-sort' + (on ? ' on' : '') +
           '" data-sort="' + attr(c.s) + '">' + esc(c.t) + global.icon(on && o.dir === 1 ? 'up' : 'down') + '</button></th>';
       }).join('') + '</tr>';
 
@@ -174,7 +180,7 @@
         (o.check ? '<td class="col-check"><span class="gm-check' + (s[row.id] ? ' on' : '') +
           '" data-sel="' + attr(row.id) + '"></span></td>' : '') +
         cols.map(function (c) {
-          return '<td class="' + (c.cls || '') + '">' + (c.r ? c.r(row) : esc(row[c.k])) + '</td>';
+          return '<td class="' + colCls(c) + '">' + (c.r ? c.r(row) : esc(row[c.k])) + '</td>';
         }).join('') + '</tr>';
     }).join('');
 
@@ -215,9 +221,9 @@
   }
 
   function askBar(ph) {
-    return '<div class="ig-ask" data-do="ask">' + global.icon('ai') +
+    return '<div class="ig-ask">' + global.icon('ai') +
       '<input type="text" placeholder="' + attr(ph) + '">' +
-      '<button class="ig-send" aria-label="Gửi cho inGo AI">' + global.icon('arrowUp') + '</button></div>';
+      '<button class="ig-send" data-do="ask" aria-label="Gửi cho GOPUSH AI">' + global.icon('arrowUp') + '</button></div>';
   }
 
   function stats(list) {
@@ -232,7 +238,7 @@
 
   function card(o) {
     return '<section class="gm-card' + (o.cls ? ' ' + o.cls : '') + '">' +
-      (o.title ? '<div class="gm-card-head"><h2 class="gm-card-title">' + esc(o.title) + '</h2>' +
+      (o.title ? '<div class="gm-card-head"><h2 class="gm-card-title">' + (o.rawTitle ? o.title : esc(o.title)) + '</h2>' +
         (o.actions ? '<div class="ig-head-actions">' + o.actions + '</div>' : '') + '</div>' : '') +
       o.body + '</section>';
   }
@@ -243,11 +249,27 @@
     }).join('') + '</dl>';
   }
 
+  /* các dòng nhãn trái – giá trị phải, ngăn bằng hairline; hợp với card hẹp */
+  function rows(pairs) {
+    return '<dl class="ig-rows">' + pairs.map(function (p) {
+      return '<div><dt>' + esc(p[0]) + '</dt><dd>' + (p[2] ? p[1] : esc(p[1])) + '</dd></div>';
+    }).join('') + '</dl>';
+  }
+
+  /* dải thông tin ngang: nhãn 12px phía trên, giá trị phía dưới — gọn hơn kv
+     khi card rộng và mỗi giá trị ngắn */
+  function facts(pairs) {
+    return '<dl class="gm-facts">' + pairs.map(function (p) {
+      return '<div><dt>' + esc(p[0]) + '</dt><dd>' + (p[2] ? p[1] : esc(p[1])) + '</dd></div>';
+    }).join('') + '</dl>';
+  }
+
   function funnel(steps) {
     var max = steps[0].v || 1;
-    return '<div class="gm-funnel">' + steps.map(function (s, i) {
+    return '<div class="gm-funnel"><div class="cap"><span>Bước · số lượng</span><span>Chuyển đổi so với bước trước</span></div>' +
+      steps.map(function (s, i) {
       var w = Math.max(18, Math.round((s.v / max) * 100));
-      var rate = i === 0 ? '100%' : (steps[i - 1].v ? Math.round((s.v / steps[i - 1].v) * 100) : 0) + '%';
+      var rate = i === 0 ? '—' : (steps[i - 1].v ? Math.round((s.v / steps[i - 1].v) * 100) : 0) + '%';
       return '<div class="step"><div class="bar" style="width:' + w + '%;--fn:' +
         (i / Math.max(1, steps.length - 1)) + '"><span>' + esc(s.l) +
         '</span><span class="gm-num">' + global.DB.num(s.v) + '</span></div>' +
@@ -265,7 +287,7 @@
   }
 
   function empty(title, sub, action) {
-    return '<div class="gm-empty">' + global.icon('file') + '<div><strong style="color:var(--ink)">' + esc(title) +
+    return '<div class="gm-empty">' + global.icon('file') + '<div><strong style="color:var(--text-primary)">' + esc(title) +
       '</strong>' + (sub ? '<div style="margin-top:4px">' + esc(sub) + '</div>' : '') + '</div>' + (action || '') + '</div>';
   }
 
@@ -293,7 +315,7 @@
     esc: esc, attr: attr, img: img, tag: tag, initials: initials, bear: bear, logo: logo, pageHead: pageHead, tabs: tabs,
     btn: btn, iconBtn: iconBtn, input: input, textarea: textarea, select: select, sel: sel, field: field,
     filters: filters, table: table, tiktok: tiktok, creatorCell: creatorCell, pager: pager, selbar: selbar,
-    askBar: askBar, stats: stats, card: card, kv: kv, funnel: funnel, steps: steps, empty: empty,
+    askBar: askBar, stats: stats, card: card, kv: kv, rows: rows, facts: facts, funnel: funnel, steps: steps, empty: empty,
     banner: banner, switchRow: switchRow, modal: modal
   };
 })(window);

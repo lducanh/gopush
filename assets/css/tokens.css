@@ -1,178 +1,169 @@
-/* inGo — design tokens.
-   Nguồn: GoMax Console design system. Khác biệt duy nhất: màu chủ đạo đổi từ
-   xanh #0191FB sang đen trung tính, phối cùng xám nhạt và trắng. */
+/* GOPUSH — design tokens.
+   Nguồn: design system GoMax Console (tokens.json). Phẳng, gọn, nhiều thông tin,
+   nền trung tính và một màu nhấn teal duy nhất. Tên token giữ đúng như bản gốc;
+   các token đánh dấu "bổ sung" không có trong bản gốc, được suy ra từ nó để phủ
+   những phần GOPUSH cần mà bộ gốc chưa có (cảnh báo, biểu đồ, theme tối). */
 
 :root {
-  /* Nền & bề mặt */
-  --bg-page: #ffffff;
-  --bg-subtle: #f9f9fb;
-  --bg-muted: #f0f0f3;
-  --bg-hover: rgba(0, 0, 51, 0.06);
-  --surface-inverse: #1c2024;
-  --on-inverse: #ffffff;
+  /* Khung ứng dụng */
+  --bg-topbar: #121415;
+  --bg-topbar-pill: rgba(255, 255, 255, 0.12);
+  --bg-topbar-pill-hover: rgba(255, 255, 255, 0.2);   /* bổ sung */
+  --bg-canvas: #f8f8f9;
+  --bg-surface: #ffffff;
+  --bg-subtle: #f0f0f0;
+  --bg-muted: #ebebeb;
+  --bg-hover: rgba(18, 20, 21, 0.05);                 /* bổ sung: hover trên mọi nền */
+  --bg-card-dark: #404142;
+
+  /* Chữ */
+  --text-primary: #121415;
+  --text-secondary: #6d6e70;
+  --text-tertiary: #8a8a8a;
+  --text-disabled: rgba(18, 20, 21, 0.3);             /* bổ sung */
+  --text-inverse: #ffffff;
+  --text-on-topbar-muted: rgba(255, 255, 255, 0.72);  /* bổ sung */
 
   /* Đường kẻ */
-  --line: #e8e8ec;
-  --line-strong: #e0e1e6;
+  --border: #d3d4d5;
+  --border-light: #ececed;
 
-  /* Chữ */
-  --ink: rgba(0, 0, 0, 0.95);
-  --ink-secondary: rgba(0, 0, 0, 0.7);
-  --ink-muted: rgba(0, 0, 0, 0.5);
-  --ink-disabled: rgba(0, 8, 48, 0.275);
+  /* Màu nhấn duy nhất */
+  --accent: #009995;
+  --accent-dark: #017976;
+  --accent-hover: #015f5c;                            /* bổ sung */
+  --accent-bright: #0fd9d0;
+  --accent-soft: #e3f5f4;
+  --accent-border: #a9dcd9;                           /* bổ sung: viền chip / chọn */
+  --on-accent: #ffffff;                               /* bổ sung: chữ trên nền teal */
 
-  /* Màu chủ đạo — đen */
-  --primary: #18181b;
-  --primary-hover: #000000;
-  --primary-text: #18181b;
-  --on-primary: #ffffff;
-  --primary-soft: #f3f3f5;
-  --primary-border: #dcdce1;
-  --focus-ring: #18181b;
+  /* Trạng thái */
+  --success: #00a870;
+  --success-bg: #e6f9ed;
+  --success-soft: #e6f9ed;
+  --success-text: #057e33;
+  --warning: #e37318;                                 /* bổ sung */
+  --warning-soft: #fff1e3;                            /* bổ sung */
+  --warning-text: #a84f00;                            /* bổ sung */
+  --danger: #ca242e;
+  --danger-soft: #fdecee;                             /* bổ sung */
+  --danger-text: #ca242e;
+  --new-bg: #eceafd;
+  --new-text: #5a4fcf;
 
-  /* Trạng thái — giữ nguyên theo hệ thống gốc */
-  --success: #30a46c;
-  --success-soft: #e6f6eb;
-  --success-text: #218358;
-  --warning: #f76b15;
-  --warning-soft: #ffefd6;
-  --warning-text: #cc4e00;
-  --danger: #e5484d;
-  --danger-soft: #feebec;
-  --danger-text: #ce2c31;
+  /* Ô icon: dựng lại từ token trạng thái của hệ thống, không thêm hue mới */
+  --soft-sky: var(--accent-soft);   --soft-sky-ink: var(--accent-dark);
+  --soft-sage: var(--success-bg);   --soft-sage-ink: var(--success-text);
+  --soft-sand: var(--warning-soft); --soft-sand-ink: var(--warning-text);
+  --soft-lilac: var(--new-bg);      --soft-lilac-ink: var(--new-text);
+  --soft-blush: var(--danger-soft); --soft-blush-ink: var(--danger-text);
+  --soft-mist: var(--bg-subtle);    --soft-mist-ink: var(--text-secondary);
+  --on-pastel: #121415;
 
-  /* Pastel — dùng tiết kiệm, chỉ cho biểu đồ và thẻ nhấn */
-  --pastel-sky: #c4d7ef;
-  --pastel-sage: #c8ddcd;
-  --pastel-sand: #eddfc6;
-  --pastel-lilac: #d6d0ea;
-  --pastel-blush: #efd6d9;
-  --pastel-mist: #e4e4e9;
-  /* chữ trên nền pastel — cố định cho cả 2 theme vì pastel luôn đủ sáng */
-  --on-pastel: #18181b;
+  /* Biểu đồ (bổ sung): teal dẫn dắt, oải hương cho chuỗi so sánh
+     như biểu đồ Chi phí / Lần hiển thị của Trung tâm doanh nghiệp */
+  --chart-1: #017976;
+  --chart-2: #8b84f0;
+  --chart-3: #4fc1bc;
+  --chart-4: #d9a55b;
+  --chart-5: #0b4f6c;
+  --chart-6: #e3868c;
+  --chart-7: #a7a9ad;
+  --chart-ink: #121415;
+  --chart-1-mid: #4fa9a6;
+  --chart-1-soft: #bfe3e1;
+  --chart-grid: #ececed;
 
-  /* Ô icon: nền rất nhạt + icon đậm cùng tông (đạt >= 4.5:1) */
-  --soft-sky: #e6eefa;    --soft-sky-ink: #2d5486;
-  --soft-sage: #e4f0e8;   --soft-sage-ink: #2c6245;
-  --soft-sand: #f6ecd9;   --soft-sand-ink: #7a5718;
-  --soft-lilac: #ebe7f7;  --soft-lilac-ink: #4c3f86;
-  --soft-blush: #fae8ea;  --soft-blush-ink: #8e3a45;
-  --soft-mist: #eeeef2;   --soft-mist-ink: #4b4c56;
+  --overlay: rgba(18, 20, 21, 0.45);
 
-  /* Chuỗi màu biểu đồ — than chì dẫn dắt, pastel trầm bổ trợ.
-     Chuỗi chính luôn là màu than chì để giao diện vẫn giữ tông đen. */
-  --chart-1: #26272b;   /* than chì   */
-  --chart-2: #7f9fc9;   /* lam khói   */
-  --chart-3: #8ab39b;   /* lá khói    */
-  --chart-4: #d3b184;   /* cát        */
-  --chart-5: #a49bc6;   /* oải hương  */
-  --chart-6: #c9959e;   /* hồng phấn  */
-  --chart-7: #8fb6ba;   /* ngọc nhạt  */
-  --chart-ink: #26272b;
-  /* ba mức của tông than chì, dùng cho xếp hạng và phễu */
-  --chart-1-mid: #9a9ba3;
-  --chart-1-soft: #d8d9de;
-  --chart-grid: rgba(0, 0, 0, 0.07);
+  /* Chữ: một họ font hệ thống, chỉ dùng 400 và 500 */
+  --font-sans: -apple-system, system-ui, "Segoe UI", Roboto, Ubuntu, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, Menlo, Consolas, monospace;
 
-  --overlay: rgba(0, 0, 0, 0.45);
-
-  /* Chữ */
-  --font-sans: Roboto, Inter, -apple-system, "Segoe UI", system-ui, sans-serif;
-  --font-mono: "Roboto Mono", ui-monospace, Menlo, monospace;
-
-  /* Khoảng cách */
+  /* Khoảng cách: lưới 4px */
   --space-1: 4px;
-  --space-1-5: 6px;
+  --space-1-5: 6px;   /* bổ sung */
   --space-2: 8px;
   --space-3: 12px;
   --space-4: 16px;
-  --space-5: 20px;
+  --space-5: 20px;    /* bổ sung */
   --space-6: 24px;
   --space-8: 32px;
 
   /* Bo góc */
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
-  --radius-xl: 12px;
-  --radius-pill: 999px;
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-pill: 9999px;
 
-  /* Bóng */
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
-  --shadow-pop: 0 8px 24px rgba(0, 0, 0, 0.12);
+  /* Bóng: hệ thống gần như phẳng */
+  --shadow-sm: 0 0 4px rgba(0, 0, 0, 0.1);
+  --shadow-pop: 0 4px 16px rgba(0, 0, 0, 0.12);       /* bổ sung: popup, drawer */
 
-  /* Kích thước */
-  --rail-width: 76px;
-  --sidebar-width: 224px;
-  --sidebar-collapsed: 0px;
-  --header-height: 56px;
-  --control-sm: 28px;
-  --control-md: 32px;
-  --row-height: 56px;
-  --icon-size: 16px;
+  /* Kích thước khung */
+  --size-sidebar: 240px;
+  --size-sidebar-collapsed: 64px;                     /* bổ sung */
+  --size-topbar: 56px;
+  --size-banner: 30px;
+  --size-nav-item: 40px;
+  --size-control: 36px;
+  --size-control-sm: 26px;
+  --size-icon: 16px;
   --drawer-width: 440px;
 }
 
+/* Theme tối (bổ sung): bộ gốc chỉ có theme sáng; bản tối giữ cùng cấu trúc
+   ba lớp và cùng màu nhấn teal, sáng hơn một bậc để đủ tương phản. */
 :root[data-theme="dark"] {
-  --bg-page: #111113;
-  --bg-subtle: #18191b;
-  --bg-muted: #212225;
-  --bg-hover: rgba(221, 234, 248, 0.08);
-  --surface-inverse: #edeef0;
-  --on-inverse: #1c2024;
+  --bg-topbar: #0b0c0d;
+  --bg-canvas: #141617;
+  --bg-surface: #1c1e20;
+  --bg-subtle: #26282a;
+  --bg-muted: #2d3032;
+  --bg-hover: rgba(255, 255, 255, 0.06);
+  --bg-card-dark: #303234;
 
-  --line: #2e3135;
-  --line-strong: #363a3f;
+  --text-primary: #f1f2f3;
+  --text-secondary: #a9abae;
+  --text-tertiary: #8c8f93;
+  --text-disabled: rgba(255, 255, 255, 0.3);
 
-  --ink: rgba(255, 255, 255, 0.95);
-  --ink-secondary: rgba(255, 255, 255, 0.7);
-  --ink-muted: rgba(255, 255, 255, 0.52);
-  --ink-disabled: rgba(255, 255, 255, 0.3);
+  --border: #3a3d40;
+  --border-light: #2b2e30;
 
-  --primary: #fafafa;
-  --primary-hover: #ffffff;
-  --primary-text: #fafafa;
-  --on-primary: #18181b;
-  --primary-soft: #26272b;
-  --primary-border: #3a3c41;
-  --focus-ring: #fafafa;
+  --accent: #14b3ae;
+  --accent-dark: #2cc4be;
+  --accent-hover: #5dd6d1;
+  --accent-soft: #123331;
+  --accent-border: #1f5a57;
+  --on-accent: #0b0c0d;
 
-  --success: #33b074;
-  --success-soft: #132d21;
-  --success-text: #3dd68c;
-  --warning: #ff801f;
-  --warning-soft: #331e0b;
-  --warning-text: #ffa057;
-  --danger: #ec5d5e;
-  --danger-soft: #3b1219;
-  --danger-text: #ff9592;
+  --success: #2fc18a;
+  --success-bg: #0f2e22;
+  --success-soft: #0f2e22;
+  --success-text: #4fd49d;
+  --warning: #f08a3a;
+  --warning-soft: #33220f;
+  --warning-text: #f5a766;
+  --danger: #ef5b63;
+  --danger-soft: #3a171b;
+  --danger-text: #ff8a90;
+  --new-bg: #25214a;
+  --new-text: #b3acf5;
+  --on-pastel: #121415;
 
-  --pastel-sky: #6d87ab;
-  --pastel-sage: #6f9279;
-  --pastel-sand: #a8926a;
-  --pastel-lilac: #8b83ab;
-  --pastel-blush: #a87f84;
-  --pastel-mist: #4a4b52;
-
-  --soft-sky: #1d2a3a;    --soft-sky-ink: #9cc2ec;
-  --soft-sage: #1b2c22;   --soft-sage-ink: #92cba6;
-  --soft-sand: #2e2617;   --soft-sand-ink: #d9b878;
-  --soft-lilac: #252039;  --soft-lilac-ink: #b6abe0;
-  --soft-blush: #331b1f;  --soft-blush-ink: #e2a1a8;
-  --soft-mist: #24252a;   --soft-mist-ink: #a9aab4;
-
-  --chart-1: #e9e9ec;
-  --chart-2: #7ea0cd;
-  --chart-3: #7fae95;
-  --chart-4: #c8a878;
-  --chart-5: #9a90bf;
-  --chart-6: #c08e97;
-  --chart-7: #86adb1;
-  --chart-ink: #e9e9ec;
-  --chart-1-mid: #8a8b93;
-  --chart-1-soft: #4a4b52;
-  --chart-grid: rgba(255, 255, 255, 0.09);
+  --chart-1: #2cc4be;
+  --chart-2: #9d97f5;
+  --chart-3: #7fd9d4;
+  --chart-4: #d9ae70;
+  --chart-5: #5aa3c4;
+  --chart-6: #ea9aa0;
+  --chart-7: #7c7f84;
+  --chart-ink: #f1f2f3;
+  --chart-1-mid: #218f8b;
+  --chart-1-soft: #1c4644;
+  --chart-grid: #2b2e30;
 
   --overlay: rgba(0, 0, 0, 0.6);
-  --shadow-pop: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-pop: 0 6px 20px rgba(0, 0, 0, 0.5);
 }

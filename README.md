@@ -1,6 +1,6 @@
-# inGo — ứng dụng front-end chạy thử được
+# GOPUSH — ứng dụng front-end chạy thử được
 
-HTML/CSS/JS thuần cho inGo v0.2: **10 module · 27 màn hình trong app · 4 trang công khai**.
+HTML/CSS/JS thuần cho GOPUSH v0.2: **10 module · 27 màn hình trong app · 4 trang công khai**.
 Không backend, không build step, không framework — mở là chạy và **thao tác được thật**.
 
 Toàn bộ dữ liệu nằm trong trình duyệt (`assets/js/store.js` sinh dữ liệu lần đầu rồi
@@ -26,9 +26,9 @@ Trang đầu là landing công khai; nút **Vào ứng dụng** dẫn vào `#/ho
 ## Cấu trúc
 
 ```
-index.html              vỏ trang, nạp font + 9 script
+index.html              vỏ trang, nạp CSS + 10 script (font hệ thống, không tải font ngoài)
 assets/css/tokens.css   token màu, chữ, khoảng cách, bo góc, kích thước (có theme tối)
-assets/css/app.css      component gm-* + khung 3 tầng, drawer, wizard, trang công khai
+assets/css/app.css      component gm-* + khung app, drawer, wizard, trang công khai
 assets/js/icons.js      72 icon Lucide (lucide-static 0.544, ISC) nhúng sẵn, không gọi CDN
 assets/js/tiktok.js     hợp đồng dữ liệu của TikTok Affiliate: enum, giới hạn, cây hạng mục
 assets/js/store.js      sinh dữ liệu, lưu localStorage, truy vấn và thống kê
@@ -40,87 +40,141 @@ assets/js/pages.js      nội dung 28 màn hình + 5 trang công khai + drawer
                         (gồm Quản lý mẫu và Theo dõi vận đơn theo Affiliate Seller API)
 assets/js/tasks.js      Điều chỉnh kế hoạch: 4 tác vụ xử lý hàng loạt trên lời mời đã tạo
 assets/js/app.js        router theo hash, shell 3 tầng, bộ xử lý mọi thao tác
-assets/img/             logo wordmark, mark ngôi sao, banner trang chủ, ảnh trang đăng nhập
+assets/img/             logo GOPUSH, favicon, banner trang chủ, ảnh trang đăng nhập
 ```
 
 ## Thiết kế
 
-Dựa trên design system **GoMax Console**, chỉ đổi màu chủ đạo từ xanh `#0191FB`
-sang **đen `#18181B`**, phối cùng xám nhạt và trắng:
+Toàn bộ CSS dựng theo design system **GoMax Console**: phẳng, gọn, nhiều thông tin,
+nền trung tính và **một màu nhấn teal** duy nhất. Tên token trong `tokens.css` giữ đúng
+như bản gốc (`bg-topbar`, `bg-canvas`, `accent`, `text-secondary`, `radius-md`…); token
+nào bản gốc chưa có thì ghi chú "bổ sung" ngay trong file.
 
-| Token | Sáng | Tối |
+| Nhóm | Giá trị chính |
+| --- | --- |
+| Khung | top bar `#121415` · canvas `#f8f8f9` · card / sidebar `#ffffff` |
+| Chữ | `#121415` chính · `#6d6e70` phụ · `#8a8a8a` meta 12px |
+| Nhấn | `accent` `#009995` (progress, banner) · `accent-dark` `#017976` (link, mục chọn, focus) · `accent-soft` `#e3f5f4` (nền mục chọn) |
+| Viền | `border` `#d3d4d5` cho input / nút · `border-light` `#ececed` cho card / divider |
+| Chữ | font hệ thống, 14px/22px, **chỉ hai độ đậm 400 và 500** |
+| Bo góc | 4px tag · 6px nút, input, mục menu · 8px card · pill cho badge |
+| Bóng | gần như không; chỉ menu nổi và drawer |
+
+Quy ước:
+
+- **Nút**: mặc định là outline trung tính 36px. Nút chính (`gm-btn-primary`) nền **teal**
+  `accent-dark` — màu chủ đạo, như nút "Thêm tài khoản nhà quảng cáo" của Trung tâm doanh
+  nghiệp TikTok; tối đa một nút mỗi vùng. Nút nhỏ `gm-btn-sm` nền xám, không viền (Xem chi
+  tiết, Hồ sơ); `gm-btn-soft` nền teal nhạt cho hành động nhanh trong bảng (Mời, Xem lỗi).
+- **Trạng thái trong bảng** là chấm màu + chữ thường, không nền ("● Đã phê duyệt"); ngoài
+  bảng mới dùng tag có nền.
+- **Ô số liệu** (KPI, stat tile) cùng một kiểu trên mọi trang: nền canvas, icon teal, số
+  20px, dòng so sánh kỳ trước.
+- **Bảng**: cột ngày giờ, người, SKU, trạng thái giữ một dòng (`U.table` tự gắn class `nw`
+  theo tên cột); ô Creator và sản phẩm tối đa 2 dòng, phần dư cắt bằng … và hiện đủ khi rê chuột.
+- **Mục đang chọn** (menu, tab cấp hai, checkbox, radio, trang hiện tại, bước wizard)
+  luôn dùng teal. Tab chính dùng vạch 2px màu chữ chính, giống trang Tài khoản của
+  Trung tâm doanh nghiệp TikTok.
+- **Link** chữ teal đậm, gạch chân khi rê chuột.
+- **Tag** 22px bo 4px, nền nhạt + chữ đậm cùng tông: xanh lá thành công, cam cảnh báo,
+  đỏ lỗi, teal cho loại.
+- **Thẻ KPI / stat tile**: nền canvas, không viền, số 20px/500 tabular-nums.
+- **Biểu đồ**: đường cong mềm, teal cho chuỗi chính, oải hương `--chart-2` cho chuỗi so
+  sánh (như biểu đồ Chi phí / Lần hiển thị của TikTok). Biểu đồ đường luôn đặt cạnh một
+  donut cơ cấu theo tỉ lệ 2/3 – 1/3 để chữ trục không bị phóng to. Sparkline, phễu và bảng xếp hạng chỉ dùng một
+  tông teal, nhạt dần theo thứ hạng.
+- Chữ đặt trên nền teal dùng `--on-accent`: trắng ở theme sáng, gần đen ở theme tối để
+  đủ tương phản.
+
+**Theme tối** là phần bổ sung (bộ gốc chỉ có theme sáng): cùng cấu trúc ba lớp, teal
+sáng hơn một bậc.
+
+**Icon** dùng bộ **Lucide** (`lucide-static` 0.544, giấy phép ISC), nhúng sẵn trong
+`icons.js`, nét 1.5px, 16px (18px trên top bar).
+
+## Logo
+
+`assets/img/logo-gopush.png` là logo GOPUSH TikTok (chữ trắng, chấm teal, nền trong
+suốt), cắt sát chữ từ file gốc `logo-gopush.webp`. Trên top bar tối dùng nguyên bản.
+Trên nền sáng (hero trang giới thiệu, thẻ đăng nhập) thêm class `ig-logo--ink`: CSS đảo
+độ sáng rồi xoay hue 180° nên chữ thành màu đậm mà chấm vẫn giữ tông teal.
+
+## Khung ứng dụng
+
+```
+top bar tối 56px · logo | 🇻🇳 VN 1300'S Coffee ● ⌄ ....... [🔍 Tìm hoặc hỏi AI… ⌘K] ✦ 🔔⁷ [🐻 ⌄]
+                          828/4.000 lời mời hôm nay ▬
+sidebar 240px    · Nghiệp vụ: Tổng quan · Creator · Hợp tác · Hàng mẫu · Kết quả
+                   Quản trị: Cài đặt doanh nghiệp  (bấm module để mở / thu menu con)
+nội dung         · nền canvas; tiêu đề 24px + nhãn phạm vi nằm ngoài card, phần dưới gom vào card trắng
+panel AI 400px   · mở bên phải từ ô tìm hoặc thanh hỏi dưới bảng, nội dung vẫn thao tác được
+```
+
+**Topbar gọn.** Logo, phạm vi shop (dòng dưới là hạn mức lời mời hôm nay, chuyển cam khi
+quá 80%), ô nhỏ **Tìm hoặc hỏi AI**, hai icon quan trọng và avatar.
+
+- Ô tìm (⌘K / Ctrl K): gõ ra kết quả theo nhóm Creator · Chiến dịch · Trang, cộng dòng
+  "Tìm trong Tìm Creator" và dòng **Hỏi GOPUSH AI** luôn ghim ở đáy; ô trống thì gợi ý
+  hỏi AI về trang đang xem, Việc cần xử lý, tạo lời mời, tìm Creator. Dùng ↑ ↓ ↵ Esc.
+- ✦ mở / đóng panel GOPUSH AI. 🔔 đếm việc tồn, bấm ra 5 việc gấp nhất kèm chấm mức độ
+  và lối sang Việc cần xử lý.
+- Menu avatar: hồ sơ, gói, ngôn ngữ VI/EN, giao diện tối, trợ giúp & liên hệ, đặt lại dữ
+  liệu thử, đăng xuất.
+
+### Sitemap theo vòng đời hợp tác
+
+| Module | Trang | Phạm vi |
 | --- | --- | --- |
-| `--primary` | `#18181b` | `#fafafa` |
-| `--on-primary` | `#ffffff` | `#18181b` |
-| `--primary-soft` / `--primary-border` | `#f3f3f5` / `#dcdce1` | `#26272b` / `#3a3c41` |
+| Tổng quan | Trang chủ · **Việc cần xử lý** | gộp được |
+| Creator | Tìm Creator · Kho Creator (Bảng / **Pipeline**) · Blacklist | theo shop |
+| | Nhãn | dùng chung |
+| Hợp tác | Chiến dịch lời mời · Nhắn tin hàng loạt | gộp được |
+| | **Chi tiết chiến dịch** (ẩn khỏi menu, mở từ tên chiến dịch) · Tự động hóa (lời mời + tin nhắn) · Điều chỉnh kế hoạch | theo shop |
+| | Thư viện mẫu | dùng chung |
+| Hàng mẫu | Yêu cầu hàng mẫu · Theo dõi vận đơn | theo shop |
+| Kết quả | Dashboard (đã gộp Báo cáo tổng) · Theo chiến dịch | gộp được |
+| | Báo cáo custom · Report AI | dùng chung |
+| Cài đặt doanh nghiệp | Cửa hàng · Thành viên · Vai trò & quyền · Nhật ký · Gói & thanh toán · Thông báo · Cài đặt AI · Hồ sơ | dùng chung |
 
-Màu trạng thái (`success`, `warning`, `danger`) giữ nguyên theo hệ thống gốc.
-Vì link không còn màu xanh, `.gm-link` dùng gạch chân mờ thay cho màu nhấn.
+Đường dẫn cũ giữ nguyên nên mọi liên kết vẫn chạy; `/reports` chuyển sang `/dashboard`,
+`/ai` mở Trang chủ kèm panel AI (`ALIASES` trong `data.js`). Mỗi trang khai báo `scope`,
+`hidden`, `navAs` ngay trong sitemap.
 
-**Pastel** chỉ dùng cho biểu đồ và ô icon, không dùng cho chữ hay nút:
-`--pastel-sky` `#c4d7ef` · `--pastel-sage` `#c8ddcd` · `--pastel-sand` `#eddfc6` ·
-`--pastel-lilac` `#d6d0ea` · `--pastel-blush` `#efd6d9` · `--pastel-mist` `#e4e4e9`
-(theme tối dùng bản trầm hơn).
+### Phạm vi xem
 
-**Biểu đồ: than chì dẫn dắt, pastel bổ trợ.** Chuỗi chính luôn là màu than chì
-`--chart-1` `#26272b` nên dashboard vẫn giữ tông đen; màu chỉ xuất hiện ở chuỗi phụ
-và các chi tiết nhỏ: `--chart-2` lam khói `#7f9fc9` · `--chart-3` lá khói `#8ab39b` ·
-`--chart-4` cát `#d3b184` · `--chart-5` oải hương `#a49bc6` · `--chart-6` hồng phấn
-`#c9959e` · `--chart-7` ngọc nhạt `#8fb6ba`. Theme tối dùng bản cùng hue, sáng hơn.
-Quy ước dùng:
+Bộ chọn trên top bar có thêm **Tất cả cửa hàng**. URL `/s/all/…` là phạm vi gộp, URL có shop
+cụ thể thì thoát về shop đó. Trang gộp được thêm tên shop vào bảng; trang thao tác theo
+shop (duyệt mẫu, tìm Creator…) hiện bộ chọn shop; trang dùng chung ghi rõ "Dùng chung mọi
+shop" cạnh tiêu đề.
 
-- Đường và cột nhiều chuỗi: **chỉ hai màu** — than chì cho chỉ số chính, một pastel cho chỉ số phụ.
-- Thẻ KPI: sparkline lấy đúng pastel của ô icon bên cạnh (`TONE_LINE` trong `pages.js`) — nét 1,6px nên chỉ là một chấm màu nhẹ.
-- Bảng xếp hạng và phễu: giữ nguyên một tông than chì, nhạt dần theo thứ hạng / theo bước
-  (`--chart-1` → `--chart-1-mid` → `--chart-1-soft`), không đổi hue để mắt đọc theo thứ tự.
-- Tròn theo ngành hàng: than chì cho nhóm lớn nhất, bốn pastel cho phần còn lại.
-- Nhãn trục rút gọn giữ một chữ số thập phân khi số còn nhỏ, tránh hai mốc liền nhau cùng in `2K`. Chữ trên pastel dùng `--on-pastel`
-cố định `#18181b` cho cả hai theme.
+### Việc cần xử lý
 
-**Icon** dùng bộ **Lucide** (`lucide-static` 0.544, giấy phép ISC). Path được tải về
-và nhúng thẳng vào `icons.js` nên đồng bộ như thư viện gốc mà không phụ thuộc CDN,
-vẫn chạy khi mở bằng `file://`. Nét 1.75, hiển thị 16px. Đổi icon chỉ cần sửa bảng
-ánh xạ tên ở đầu file.
+Một hàng đợi duy nhất (`P.inboxItems`) tính từ dữ liệu: token hết hạn, mẫu chờ duyệt, Creator
+nhận mẫu quá hạn, vận đơn đồng bộ lỗi, chiến dịch lỗi hoặc sắp hết hạn, quy tắc tự động
+lỗi, hạn mức trên 80%. Mức độ Khẩn / Cảnh báo / Thường; giao người phụ trách và đánh dấu xong
+được lưu trong `inboxState`. Chuông, badge sidebar và Trang chủ đều đọc từ đây.
 
-**Ô icon nền màu**: nền là tông rất nhạt (`--soft-*`), icon là tông đậm cùng màu
-(`--soft-*-ink`), không dùng đen. Sáu cặp: sky, sage, sand, lilac, blush, mist —
-mỗi cặp đạt tối thiểu 4.5:1 ở cả hai theme.
+### Chi tiết chiến dịch
 
-## Khung 3 tầng
+`#/s/{shop}/campaigns/c/{id}`: phễu 6 bước bấm được (lọc tab tương ứng), dải thông tin
+gửi / giãn cách / hạn / GMV, và 5 tab Creator trong đợt · Hàng mẫu · Nội dung · Kết quả ·
+Nhật ký. Tạm dừng, Bù Creator, Gia hạn, Nhân bản, Xóa ngay trên đầu trang.
 
-```
-thanh trên 56px  · logo ...................... [shop] [tìm nhanh] [hạn mức]
-                   [🇻🇳 VI] | thông báo · sáng/tối · trợ giúp | avatar + tên
-rail 76px        · 6 module nghiệp vụ ở trên, 3 module quản trị ở dưới
-sidebar con 224px· tối đa 4 mục của module đang chọn, mỗi mục có icon bên trái
-nội dung         · tiêu đề + nút chính → tab → bộ lọc → bảng / wizard / biểu đồ
-```
+### Pipeline Creator
 
-Mọi control trên thanh trên đều là pill cao 32px, cùng nền và cùng viền — kể cả ô
-hạn mức gửi. Nút tài khoản không có khung, chỉ đổi nền khi rê chuột.
+Kho Creator có nút Bảng / Pipeline. Pipeline chia 5 cột theo giai đoạn quan hệ, mỗi cột có
+số Creator và tổng GMV; kéo thẻ sang cột khác để đổi giai đoạn (chuyển Mới → Đã mời sẽ hỏi
+xác nhận vì gửi lời mời thật). Hồ sơ Creator có dòng thời gian: lời mời, chiến dịch, xin
+mẫu, ký nhận, nội dung kèm lượt xem và đơn.
 
-**Nút thu gọn sidebar** là một thẻ nhỏ có mũi tên nằm ngay trên vách ngăn giữa
-sidebar con và vùng nội dung, canh giữa theo chiều dọc. Bấm để ẩn sidebar; thẻ
-trượt sang vách của rail và mũi tên đảo chiều. Lựa chọn được nhớ cho lần mở sau.
+**Nút thu gọn** nằm trên vách sidebar; thu về cột icon 64px, màn hình dưới 1100px tự dùng dạng này.
 
-Drawer hồ sơ Creator mở từ **mọi bảng có Creator** (bấm vào tên) và không rời trang.
+## GOPUSH AI
 
-## inGo AI
-
-Module thứ 7 trên rail, ngay dưới Báo cáo. Ba màn:
-
-- **Trang chủ** `#/ai` — ô chat kiểu ChatGPT: hội thoại mẫu cho thấy AI quét dữ liệu
-  rồi trả lời kèm bảng và dẫn chứng; chip gợi ý prompt; ô soạn dính đáy màn có chọn
-  phạm vi shop và kỳ dữ liệu.
-- **Report** `#/ai/reports` — danh sách report AI tạo (xem, tải, xuất file, chia sẻ,
-  xóa) cùng một report chi tiết mẫu: tóm tắt của AI, chỉ số chính, biểu đồ, bảng đề
-  xuất và phần khuyến nghị đánh số.
-- **Setting** `#/ai/settings` — dạy AI: nguồn dữ liệu được quét, trọng số chấm điểm
-  Creator, ngưỡng cảnh báo, cách trả lời, hướng dẫn riêng, ví dụ huấn luyện và giới
-  hạn an toàn.
-
-Thanh thao tác hàng loạt nổi ở cuối bảng đã bỏ; thay vào đó là **ô hỏi inGo AI**
-một dòng, bấm vào là chuyển sang màn chat.
+Không còn là module riêng: nút **GOPUSH AI** trên top bar (và thanh hỏi nhanh dưới bảng)
+mở panel bên phải. Panel ghi rõ đang đọc gì — trang, phạm vi shop, số bộ lọc, số dòng đang
+chọn, kỳ dữ liệu — và gợi ý câu hỏi theo module đang mở. Report AI nằm trong Kết quả, Cài
+đặt AI nằm trong Cài đặt doanh nghiệp.
 
 ## Hỗ trợ
 
@@ -132,13 +186,12 @@ link thật (`tel:`, `zalo.me`, `mailto:`) nên bấm là mở ứng dụng tư�
 
 Giao diện cho người thao tác cả ngày nên ưu tiên nhìn được nhiều dữ liệu:
 
-- Một trang danh sách chỉ có **ba dải ngang**: đầu trang → tab → thanh lọc. Thanh lọc
-  nền trắng, chỉ ngăn bằng hairline, không còn dải xám riêng.
-- Control trong thanh lọc cao **26px**, chữ 12.5px; panel lọc nâng cao mỗi nhóm một
-  hàng, nút Đặt lại nằm ở góc thay vì chiếm thêm một dòng.
-- Ô bảng cao 8px trên dưới, avatar 28px → dòng ~42px, hơn khoảng 25% số dòng thấy
-  được trên cùng màn hình so với trước.
-- Card padding 14px, khoảng cách giữa các khối 12px, thẻ KPI 10px.
+- Một trang danh sách gồm tiêu đề ngoài card, rồi trong card: tab → thanh lọc → bảng →
+  phân trang. Các khối chỉ ngăn bằng hairline.
+- Control trong thanh lọc cao **32px**, chữ 13px; panel lọc nâng cao là một khối nền
+  canvas bên trong card, nút Đặt lại nằm ở góc.
+- Ô bảng đệm 12px trên dưới, header nền canvas, chữ 13px/500.
+- Card padding 16px / 24px, khoảng cách giữa các card 12px, lưới 4px.
 
 ## Bộ lọc
 
@@ -151,8 +204,8 @@ Không xếp hết điều kiện ra màn hình. Mỗi trang chọn một mức 
 | Yêu cầu hàng mẫu, Vận đơn | 1 hàng gọn + chips cho điều kiện đặc biệt |
 | Báo cáo custom | panel mở sẵn, chia 2 nhóm Phạm vi / Chỉ số |
 
-Control trong thanh lọc dùng cỡ nhỏ 28px (`.gm-input-sm`) để một hàng chứa đủ.
-Panel nâng cao đóng/mở bằng `data-act="filters"`, nút đổi sang nền đen khi đang mở.
+Control trong thanh lọc dùng cỡ nhỏ 32px (`.gm-input-sm`) để một hàng chứa đủ.
+Panel nâng cao đóng/mở bằng `data-act="filters"`, nút đổi viền và chữ sang teal khi đang mở.
 
 ## Đường dẫn
 
@@ -166,7 +219,7 @@ Router chạy theo hash. Trang gắn shop có dạng `#/s/{shopId}/…`, còn l�
 | Hàng mẫu | `#/s/{shop}/samples` · `…/samples/shipments` |
 | Tự động hóa | `#/s/{shop}/auto/invites` · `…/auto/messages` |
 | Báo cáo | `#/reports` · `#/reports/campaigns` · `#/reports/custom` |
-| inGo AI | `#/ai` · `#/ai/reports` · `#/ai/settings` |
+| GOPUSH AI | `#/ai` · `#/ai/reports` · `#/ai/settings` |
 | Cửa hàng | `#/shops` · `#/shops/{shop}` |
 | Nhóm | `#/team/members` · `#/team/roles` · `#/team/audit` |
 | Cài đặt & Gói | `#/settings/profile` · `#/settings/billing` · `#/settings/notifications` |
@@ -208,7 +261,7 @@ Mọi nút chưa nối dữ liệu sẽ hiện toast nhắc đây là bản khun
 | Hàng mẫu | Đủ 6 trạng thái, đẩy trạng thái từng bước (duyệt → chờ giao → đã giao → đang thực hiện → hoàn thành), duyệt/từ chối hàng loạt, **gắn link video** và mở video trên TikTok |
 | Vận đơn | Lọc đơn quá hạn chưa có video, gửi nhắc từng đơn hoặc hàng loạt |
 | Tự động hóa | Bật/tắt, sửa, chạy thử — chạy thử mời thật số Creator khớp bộ lọc |
-| inGo AI | Hỏi bằng câu chữ thường, câu trả lời **tính từ dữ liệu đang có** (top Creator theo GMV, đơn quá hạn, so sánh chiến dịch); tạo report, xóa report, tải CSV |
+| GOPUSH AI | Hỏi bằng câu chữ thường, câu trả lời **tính từ dữ liệu đang có** (top Creator theo GMV, đơn quá hạn, so sánh chiến dịch); tạo report, xóa report, tải CSV |
 | Cửa hàng | Thêm shop, cập nhật ủy quyền, đồng bộ, đổi giới hạn gửi, bật/tắt sản phẩm, gỡ liên kết |
 | Nhóm | Mời thành viên, đổi vai trò, giao shop, khóa/mở, xem ma trận quyền theo vai trò |
 | Cài đặt | Mọi công tắc và ô nhập đều ghi vào dữ liệu; thông báo theo từng kênh |
@@ -247,7 +300,7 @@ kèm bản xem trước đúng như Creator sẽ nhận.
 | Nguồn | Bộ lọc |
 | --- | --- |
 | **Dữ liệu TikTok Shop** | Theo đúng định dạng API trả về, chia 3 nhóm: *Nhà sáng tạo* (hạng mục, hoa hồng trung bình, loại nội dung, agency, ngôn ngữ, ngôi sao sáng tạo, chưa mời trong 90 ngày) · *Người theo dõi* (độ tuổi, giới tính, tổng follower) · *Hiệu suất* (GMV, số món bán, lượt xem TB video, người xem TB LIVE, tỉ lệ tương tác, tần suất đăng, thương hiệu đã cộng tác) |
-| **Kho Database của inGo** | Bộ lọc tự thiết kế: ngành hàng, follower, GMV, tỉ lệ đăng, loại nội dung, quốc gia, nhãn, quan hệ, thông tin liên hệ |
+| **Kho Database của GOPUSH** | Bộ lọc tự thiết kế: ngành hàng, follower, GMV, tỉ lệ đăng, loại nội dung, quốc gia, nhãn, quan hệ, thông tin liên hệ |
 | **Creator chỉ định** | Dán tối đa 5.000 username hoặc tải file Excel. Không có bộ lọc |
 
 Bộ lọc nằm gọn trong một khung xám, mỗi nhóm một hàng select nhỏ 28px, đổi nhóm bằng
@@ -268,13 +321,13 @@ bắt buộc.
 
 ### Vì sao không giống TikTok Seller
 
-TikTok bắt lọc lại Creator cho từng lời mời 50 người. inGo lọc **một lần** ra tới
+TikTok bắt lọc lại Creator cho từng lời mời 50 người. GOPUSH lọc **một lần** ra tới
 10.000 Creator rồi tự cắt thành tối đa 200 chiến dịch × 50 Creator, tự điền và gửi.
 Thanh chân wizard luôn hiện `N Creator → M chiến dịch`, và danh sách chiến dịch có
 nút **Gom theo lô** để xem một dòng cho cả lô thay vì 200 dòng rời.
 
 Hạn mức có hai tầng: **trần cứng TikTok cấp** (chỉ đọc, lấy từ API) và **trần an
-toàn của inGo** (sửa được, luôn nhỏ hơn). Số thật dùng để chặn thao tác là cái nhỏ hơn.
+toàn của GOPUSH** (sửa được, luôn nhỏ hơn). Số thật dùng để chặn thao tác là cái nhỏ hơn.
 
 ### Định dạng tiền
 
@@ -392,14 +445,14 @@ từng lời mời.
 - Bộ dữ liệu ban đầu: 4 cửa hàng, 1.200 Creator, 15 chiến dịch, 6 tác vụ, 96 yêu
   cầu hàng mẫu, 5 nhãn, 8 mẫu, 8 report. Sinh bằng bộ số giả ngẫu nhiên có hạt cố
   định nên lần nào cũng giống nhau.
-- Dữ liệu lưu ở khóa `ingo.db.v7`. Khi đổi cấu trúc, khóa được nâng phiên bản và
+- Dữ liệu lưu ở khóa `gopush.db.v7`. Khi đổi cấu trúc, khóa được nâng phiên bản và
   các khóa cũ tự xóa lúc nạp, nên không phải xóa cache tay.
-- Logo là bộ khóa **inGo · BY GOMAX DIGITAL**, dùng **đúng file gốc 2000×600**,
+- Logo là bộ khóa **GOPUSH · BY GOMAX DIGITAL**, dùng **đúng file gốc 2000×600**,
   không xử lý lại ảnh. File có sẵn nền trắng nên ở theme tối được đặt trên một nền
   trắng bo góc (`:root[data-theme="dark"] .ig-logo`) thay vì `filter: invert(1)` —
   invert sẽ biến chữ đỏ cam của GoMax thành xanh lơ.
 - **Chống cache**: mọi file tĩnh gắn `?v=`. Đổi ảnh hoặc sửa CSS/JS thì tăng số này
   ở `index.html` và ở `ASSET_V` trong `ui.js` cho khớp, trình duyệt sẽ tải bản mới.
-- `assets/img/banner.png` là banner inGo, đã thu còn 1280px cho nhẹ. Thay banner
+- `assets/img/banner.png` là banner GOPUSH, đã thu còn 1280px cho nhẹ. Thay banner
   khác chỉ cần ghi đè file này, không phải sửa code.
 - Bảng biểu đồ vẽ bằng CSS thuần, chưa dùng thư viện chart nào.

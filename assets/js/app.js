@@ -1,4 +1,4 @@
-/* inGo — khung ứng dụng: router theo hash, shell 3 tầng, và bộ xử lý thao tác
+/* GOPUSH — khung ứng dụng: router theo hash, shell 3 tầng, và bộ xử lý thao tác
    tập trung. Mọi nút trong app đều đi qua dispatch() bên dưới. */
 (function () {
   'use strict';
@@ -12,10 +12,13 @@
   };
 
   var state = {
-    lang: store.get('ingo.lang', 'vi'),
-    shop: store.get('ingo.shop', S.data.shops[0].id),
-    theme: store.get('ingo.theme', 'light'),
-    sub: store.get('ingo.sub', 'open')
+    lang: store.get('gopush.lang', 'vi'),
+    shop: store.get('gopush.shop', S.data.shops[0].id),
+    theme: store.get('gopush.theme', 'light'),
+    sub: store.get('gopush.sub', 'open'),
+    /* phạm vi xem: true = Tất cả cửa hàng; state.shop vẫn là shop làm việc gần nhất */
+    all: store.get('gopush.all', '0') === '1',
+    ai: false          /* panel GOPUSH AI đang mở */
   };
   if (!S.data.shops.some(function (s) { return s.id === state.shop; })) state.shop = S.data.shops[0].id;
 
@@ -35,20 +38,33 @@
   var ROUTES = [];
   D.MODULES.forEach(function (m) {
     m.pages.forEach(function (p) {
-      ROUTES.push({ module: m, page: p, re: new RegExp('^' + p.path.replace('{shop}', '([^/]+)') + '$') });
+      ROUTES.push({ module: m, page: p,
+        re: new RegExp('^' + p.path.replace('{shop}', '([^/]+)').replace('{id}', '([^/]+)') + '$') });
     });
   });
 
-  function href(page, shopId) { return '#' + page.path.replace('{shop}', shopId || state.shop); }
+  /* ở chế độ Tất cả cửa hàng, liên kết tới trang theo shop dùng /s/all/… */
+  function href(page, shopId) { return '#' + page.path.replace('{shop}', shopId || (state.all ? 'all' : state.shop)); }
+  function pageById(id) {
+    for (var i = 0; i < ROUTES.length; i++) if (ROUTES[i].page.id === id) return ROUTES[i];
+    return null;
+  }
+  /* phạm vi dữ liệu của trang đang mở: 'all' chỉ khi trang gộp được */
+  function scopeOf(page) { return state.all && page.scope === 'multi' ? 'all' : state.shop; }
   function label(o) { return state.lang === 'en' ? o.en : o.vi; }
   function desc(o) { return state.lang === 'en' ? o.den : o.dvi; }
   function t(key) { return D.T[key][state.lang]; }
-  function currentPath() { return location.hash.replace(/^#/, '') || '/'; }
+  function currentPath() { return location.hash.replace(/^#/, '').split('?')[0] || '/'; }
+  function query() { var q = location.hash.split('?')[1] || ''; return q; }
 
   function match(path) {
+    if (D.ALIASES[path]) return { alias: D.ALIASES[path] };
     for (var i = 0; i < ROUTES.length; i++) {
       var m = path.match(ROUTES[i].re);
-      if (m) return { route: ROUTES[i], shop: m[1] };
+      if (m) {
+        var hasShop = ROUTES[i].page.path.indexOf('{shop}') > -1;
+        return { route: ROUTES[i], shop: hasShop ? m[1] : null, id: hasShop ? m[2] : m[1] };
+      }
     }
     for (var j = 0; j < D.PUBLIC.length; j++) if (D.PUBLIC[j].path === path) return { pub: D.PUBLIC[j] };
     return null;
@@ -57,71 +73,192 @@
   var cur = null;   /* { module, page, ctx } của trang đang mở */
 
   /* --------------------------------------------------------- shell */
+  /* Topbar gọn tối đa: logo · phạm vi shop (kèm hạn mức) · ô Tìm hoặc hỏi AI · avatar.
+     Ngôn ngữ, giao diện, trợ giúp nằm trong menu avatar; việc tồn báo trên sidebar. */
+  function quotaLine() {
+    var used = 0, capAll = 0;
+    (state.all ? S.data.shops : [S.shop(state.shop)]).forEach(function (x) { var q = S.quota(x.id); used += q.used; capAll += q.cap; });
+    var pct = capAll ? Math.min(100, Math.round(used / capAll * 100)) : 0;
+    return '<span class="qt' + (pct >= 80 ? ' is-high' : '') + '"><span class="gm-num">' + S.num(used) + '/' + S.num(capAll) +
+      '</span> lời mời hôm nay<span class="track"><i style="width:' + pct + '%"></i></span></span>';
+  }
+
+  function openCount() { return P.inboxItems(state.all ? 'all' : state.shop).filter(function (x) { return !x.done; }).length; }
+  function bellDot() { var n = openCount(); return n ? '<span class="gm-topbar__dot">' + n + '</span>' : ''; }
+
+  /* chuông: 5 việc gấp nhất, đầy đủ ở Việc cần xử lý */
+  function notifMenu(anchor) {
+    var items = P.inboxItems(state.all ? 'all' : state.shop).filter(function (x) { return !x.done; });
+    var el = openMenu(anchor, '<div class="h">Việc cần xử lý · ' + items.length + '</div>' + (items.length ? items.slice(0, 5).map(function (i) {
+      return '<button data-go="' + i.go + '"><span class="ig-sevdot is-' + i.sev + '"></span>' +
+        '<span style="flex:1;text-align:left">' + U.esc(i.title) + '<br><small class="gm-muted">' + U.esc(i.shopName + ' · ' + i.sub) + '</small></span></button>';
+    }).join('') : '<div class="h">Không có việc tồn</div>') +
+      '<div class="sep"></div><button data-go="/inbox">' + ic('inbox') + 'Xem tất cả việc</button>');
+    el.style.width = '340px';
+    el.style.left = Math.max(8, Math.min(anchor.getBoundingClientRect().right - 340, window.innerWidth - 348)) + 'px';
+  }
+
   function topbar() {
     var sh = S.shop(state.shop);
     var dot = sh.status === 'ok' ? 'var(--success)' : (sh.status === 'warn' ? 'var(--warning)' : 'var(--danger)');
-    return '<header class="ig-topbar">' +
-      '<a class="ig-brand" href="#/" title="Trang công khai">' + U.logo() + '</a>' +
-      '<button class="ig-shop" id="shop-btn" title="Đổi cửa hàng đang làm việc">' +
-        '<span class="flag">' + sh.flag + '</span>' +
-        '<span class="txt"><span class="cap">Cửa hàng</span><span class="nm">' + U.esc(sh.name) + '</span></span>' +
-        '<i class="gm-dot" style="background:' + dot + '"></i>' + ic('chevronsDown', 'sw') + '</button>' +
-      '<span class="spacer"></span>' +
-      '<div class="ig-tools">' +
-        '<label class="ig-pill ig-search">' + ic('search') +
-          '<input type="search" id="gsearch" placeholder="' + U.attr(t('search')) + '"></label>' +
-        '<button class="ig-pill ig-quota" title="Hạn mức lời mời hôm nay">' + ic('send') +
-          '<b class="gm-num">' + S.num(sh.used) + '</b><span class="sl">/' + S.num(S.quota(sh.id).cap) + '</span>' +
-          '<span class="track"><i style="width:' + Math.min(100, sh.used / (S.quota(sh.id).cap || 1) * 100) +
-          '%"></i></span></button>' +
-        '<button class="ig-pill ig-lang" id="lang-btn" title="' + U.attr(t('lang')) + '">' +
-          '<span class="flag">' + (state.lang === 'vi' ? '🇻🇳' : '🇬🇧') + '</span>' + state.lang.toUpperCase() + ic('down') + '</button>' +
-      '</div>' +
+    var mac = /Mac|iPhone|iPad/.test(navigator.platform || '');
+    return '<header class="gm-topbar ig-topbar">' +
+      '<a class="gm-topbar__brand ig-brand" href="#/" title="Trang công khai">' + U.logo() + '</a>' +
       '<span class="sep"></span>' +
-      '<div class="ig-icons">' +
-        '<button class="gm-btn gm-btn-ghost gm-btn-icon" id="notif-btn" aria-label="' + U.attr(t('notif')) + '">' + ic('bell') + '</button>' +
-        '<button class="gm-btn gm-btn-ghost gm-btn-icon" id="theme-btn" aria-label="' + U.attr(t('theme')) + '">' +
-          ic(state.theme === 'dark' ? 'sun' : 'moon') + '</button>' +
-        '<button class="gm-btn gm-btn-ghost gm-btn-icon" id="help-btn" aria-label="' + U.attr(t('help')) + '">' + ic('help') + '</button>' +
+      '<button class="ig-shop" id="shop-btn" title="Đổi phạm vi xem">' +
+        (state.all
+          ? '<span class="flag">' + ic('store') + '</span>' +
+            '<span class="txt"><span class="nm">Tất cả cửa hàng (' + S.data.shops.length + ')</span>' + quotaLine() + '</span>'
+          : '<span class="flag">' + sh.flag + '</span>' +
+            '<span class="txt"><span class="nm">' + U.esc(sh.name) + '<i class="gm-dot" style="background:' + dot + '"></i></span>' +
+            quotaLine() + '</span>') +
+        ic('chevronsDown', 'sw') + '</button>' +
+      '<div class="gm-topbar__right">' +
+        '<div class="ig-cmd" id="cmd">' + ic('search') +
+          '<input type="search" id="gsearch" autocomplete="off" placeholder="Tìm hoặc hỏi AI…">' +
+          '<kbd>' + (mac ? '⌘' : 'Ctrl') + ' K</kbd>' +
+          '<div class="ig-cmdpop" id="cmdpop" hidden></div></div>' +
+        '<button class="gm-topbar__icon ig-aiicon' + (state.ai ? ' on' : '') + '" id="ai-btn" title="GOPUSH AI — hỏi về trang đang xem">' + ic('ai') + '</button>' +
+        '<button class="gm-topbar__icon" id="notif-btn" title="Việc cần xử lý">' + ic('bell') + bellDot() + '</button>' +
+        '<button class="ig-avatarbtn" id="user-btn" aria-label="Tài khoản và tùy chỉnh">' + U.bear() + ic('down') + '</button>' +
       '</div>' +
-      '<button class="ig-user" id="user-btn">' + U.bear() + '<span class="nm">' + U.esc(USER()) + '</span>' + ic('down') + '</button>' +
     '</header>';
   }
 
-  function rail(activeModule) {
-    var biz = '', admin = '';
-    D.MODULES.forEach(function (m) {
-      var html = '<a class="ig-rail-item' + (m.id === activeModule.id ? ' on' : '') + '" href="' + href(m.pages[0]) +
-        '" title="' + U.attr(label(m)) + '">' + ic(m.icon) + '<span>' + U.esc(label(m)) + '</span></a>';
-      if (m.group === 'biz') biz += html; else admin += html;
+  /* --------------------------------------------------------- bảng Tìm hoặc hỏi AI */
+  function fold(x) { return String(x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase(); }
+  var CMD = { list: [], sel: 0 };
+
+  function cmdResults(q) {
+    var out = [], fq = fold(q.trim()), sid = state.shop;
+    function item(group, icon, title, sub, run) { out.push({ g: group, i: icon, t: title, s: sub || '', run: run }); }
+    if (!fq) {
+      item('Gợi ý', 'ai', 'Hỏi GOPUSH AI về trang đang xem', cur ? label(cur.page) : '', 'aiopen');
+      var n = P.inboxItems(state.all ? 'all' : sid).filter(function (x) { return !x.done; }).length;
+      item('Gợi ý', 'inbox', 'Việc cần xử lý', n + ' việc đang chờ', 'go:/inbox');
+      item('Gợi ý', 'send', 'Tạo lời mời hàng loạt', 'Mở wizard 4 bước', 'do:campaign:new:invite');
+      item('Gợi ý', 'search', 'Tìm Creator trên TikTok Shop', 'Lọc theo ngành, follower, GMV', 'go:/s/' + sid + '/creators/discover');
+      return out;
+    }
+    S.data.creators.filter(function (c) { return fold(c.name + ' ' + c.user).indexOf(fq) > -1; }).slice(0, 5).forEach(function (c) {
+      item('Creator', 'user', c.name, '@' + c.user + ' · ' + S.money(c.followers) + ' follower · ' + c.cat, 'do:creator:' + c.id);
     });
-    return '<nav class="ig-rail" aria-label="Module">' + biz + '<span class="grow"></span>' +
-      '<span class="ig-rail-sep"></span>' + admin + '</nav>';
+    S.data.campaigns.filter(function (c) { return fold(c.name).indexOf(fq) > -1; }).slice(0, 4).forEach(function (c) {
+      item('Chiến dịch', c.kind === 'message' ? 'msgSend' : 'send', c.name, S.shop(c.shopId).name + ' · ' + c.status,
+        'go:/s/' + c.shopId + '/campaigns/c/' + c.id);
+    });
+    ROUTES.filter(function (r) { return !r.page.hidden && fold(label(r.page) + ' ' + label(r.module)).indexOf(fq) > -1; })
+      .slice(0, 4).forEach(function (r) {
+        item('Trang', r.page.ic || 'file', label(r.page), label(r.module), 'go:' + href(r.page).slice(1));
+      });
+    item('Tìm thêm', 'search', 'Tìm “' + q.trim() + '” trong Tìm Creator', 'Lọc toàn bộ Creator của TikTok Shop', 'find:' + q.trim());
+    item('GOPUSH AI', 'ai', 'Hỏi GOPUSH AI: “' + q.trim() + '”', 'Trả lời bằng dữ liệu của ' + (state.all ? 'mọi shop' : S.shop(sid).name), 'ai:' + q.trim());
+    return out;
+  }
+
+  function cmdRender(q) {
+    var pop = document.getElementById('cmdpop');
+    if (!pop) return;
+    CMD.list = cmdResults(q || '');
+    CMD.sel = q && q.trim() ? 0 : 0;
+    var last = '';
+    pop.innerHTML = CMD.list.map(function (it, k) {
+      var head = it.g !== last ? '<div class="h">' + U.esc(it.g) + '</div>' : '';
+      last = it.g;
+      return head + '<button class="it' + (k === CMD.sel ? ' is-sel' : '') + (it.g === 'GOPUSH AI' ? ' is-ai' : '') +
+        '" data-cmd="' + k + '">' + ic(it.i) + '<span class="t"><b>' + U.esc(it.t) + '</b>' +
+        (it.s ? '<small>' + U.esc(it.s) + '</small>' : '') + '</span>' + (k === CMD.sel ? '<kbd>↵</kbd>' : '') + '</button>';
+    }).join('') + '<div class="foot"><span><kbd>↑</kbd><kbd>↓</kbd> chọn</span><span><kbd>↵</kbd> mở</span><span><kbd>Esc</kbd> đóng</span></div>';
+    pop.hidden = false;
+  }
+  function cmdMove(d) {
+    var pop = document.getElementById('cmdpop'); if (!pop || pop.hidden || !CMD.list.length) return;
+    CMD.sel = (CMD.sel + d + CMD.list.length) % CMD.list.length;
+    [].forEach.call(pop.querySelectorAll('.it'), function (b) {
+      var on = +b.getAttribute('data-cmd') === CMD.sel;
+      b.classList.toggle('is-sel', on);
+      var k = b.querySelector('kbd'); if (k && !on) k.remove();
+      if (on && !k) b.insertAdjacentHTML('beforeend', '<kbd>↵</kbd>');
+      if (on) b.scrollIntoView({ block: 'nearest' });
+    });
+  }
+  function cmdClose() {
+    var pop = document.getElementById('cmdpop'); if (pop) pop.hidden = true;
+    var inp = document.getElementById('gsearch'); if (inp) { inp.value = ''; inp.blur(); }
+  }
+  function cmdRun(k) {
+    var it = CMD.list[k]; if (!it) return;
+    var r = it.run;
+    cmdClose();
+    if (r === 'aiopen') toggleAI(true);
+    else if (r.indexOf('go:') === 0) location.hash = '#' + r.slice(3);
+    else if (r.indexOf('do:') === 0) dispatch(r.slice(3), document.body);
+    else if (r.indexOf('ai:') === 0) askAI(r.slice(3));
+    else if (r.indexOf('find:') === 0) {
+      var vw = vs('discover'); vw.q = r.slice(5); vw.tab = 0; vw.page = 1; vw.f = {};
+      location.hash = '#/s/' + state.shop + '/creators/discover';
+    }
   }
 
   function badgeFor(p) {
     var db = S.data, sid = state.shop;
+    if (p.id === 'inbox') { var n = P.inboxItems(state.all ? 'all' : sid).filter(function (x) { return !x.done; }).length; return n ? String(n) : null; }
     if (p.id === 'library') return S.num(db.creators.filter(function (c) { return S.rel(c, sid).saved; }).length);
-    if (p.id === 'requests') return S.num(db.samples.filter(function (s) { return s.shopId === sid && s.status === 'PENDING'; }).length);
+    if (p.id === 'requests') return S.num(db.samples.filter(function (s) { return (state.all || s.shopId === sid) && s.status === 'PENDING'; }).length);
     if (p.id === 'ai-reports') return String(db.aiReports.length);
     return null;
   }
 
-  function subnav(m, activePage) {
-    return '<nav class="ig-subnav" id="subnav" aria-label="' + U.attr(label(m)) + '">' +
-      '<h2>' + U.esc(label(m)) + '</h2>' +
-      m.pages.map(function (p) {
-        var b = badgeFor(p);
-        return '<a class="ig-sub-item' + (p.id === activePage.id ? ' on' : '') + '" href="' + href(p) + '">' +
-          ic(p.ic) + '<span class="tx">' + U.esc(label(p)) + '</span>' +
-          (b ? '<span class="gm-badge">' + b + '</span>' : '') + '</a>';
-      }).join('') + '</nav>';
+  /* Sidebar trắng một cột theo GoMax Console: nhãn nhóm 12px, module là nav item
+     40px có icon; module đang mở xổ các trang con thụt lề 32px, không icon.
+     Trang hidden không lên menu; navAs cho biết mục nào được tô sáng thay nó. */
+  /* module nào đang mở menu con: người dùng tự mở/thu, lựa chọn được nhớ.
+     Khi chuyển sang module khác, module chứa trang đang xem tự mở ra. */
+  var NAV_OPEN = (function () { try { return JSON.parse(store.get('gopush.nav', '[]')) || []; } catch (e) { return []; } })();
+  var navLastModule = null;
+  function saveNav() { store.set('gopush.nav', JSON.stringify(NAV_OPEN)); }
+
+  function sidebar(activeModule, activePage) {
+    var activeId = activePage.navAs || activePage.id;
+    if (navLastModule !== activeModule.id) {
+      navLastModule = activeModule.id;
+      if (NAV_OPEN.indexOf(activeModule.id) < 0) { NAV_OPEN.push(activeModule.id); saveNav(); }
+    }
+    function group(g, title) {
+      return '<div class="gm-nav-label">' + U.esc(title) + '</div>' +
+        D.MODULES.filter(function (m) { return m.group === g; }).map(function (m) {
+          var cur = m.id === activeModule.id;
+          var vis = m.pages.filter(function (p) { return !p.hidden; });
+          if (vis.length < 2) {
+            return '<a class="gm-nav-item' + (cur ? ' is-current is-active' : '') + '" href="' + href(vis[0]) +
+              '" title="' + U.attr(label(m)) + '">' + ic(m.icon) + '<span class="tx">' + U.esc(label(m)) + '</span></a>';
+          }
+          var open = NAV_OPEN.indexOf(m.id) > -1;
+          /* badge tổng hiện trên dòng module khi menu con đang thu, để không mất tín hiệu */
+          var alert = vis.map(function (p) { return p.id === 'inbox' ? badgeFor(p) : null; }).filter(Boolean)[0];
+          return '<div class="ig-navgrp' + (open ? ' is-open' : '') + '" data-mod="' + m.id + '">' +
+            '<button class="gm-nav-item' + (cur ? ' is-current' : '') + '" data-navtoggle="' + m.id + '" data-first="' +
+              U.attr(href(vis[0])) + '" aria-expanded="' + open + '" title="' + U.attr(label(m)) + '">' + ic(m.icon) +
+              '<span class="tx">' + U.esc(label(m)) + '</span>' +
+              (alert ? '<span class="gm-badge is-alert ig-navdot">' + alert + '</span>' : '') +
+              ic('down', 'gm-chev') + '</button>' +
+            '<div class="ig-navsub"><div>' + vis.map(function (p) {
+              var b = badgeFor(p);
+              return '<a class="gm-nav-item gm-nav-sub' + (p.id === activeId ? ' is-active' : '') + '" href="' + href(p) + '">' +
+                '<span class="tx">' + U.esc(label(p)) + '</span>' +
+                (b ? '<span class="gm-badge' + (p.id === 'inbox' ? ' is-alert' : '') + '">' + b + '</span>' : '') + '</a>';
+            }).join('') + '</div></div></div>';
+        }).join('');
+    }
+    return '<nav class="gm-sidebar ig-side" id="subnav" aria-label="Điều hướng">' +
+      group('biz', state.lang === 'en' ? 'Operations' : 'Nghiệp vụ') +
+      group('admin', state.lang === 'en' ? 'Administration' : 'Quản trị') + '</nav>';
   }
 
   function support() {
     var rows = [
       ['phone', 0, 'Gọi hỗ trợ', '0901 234 567 · 8h – 22h', 'tel:+84901234567'],
-      ['chat', 1, 'Zalo OA', 'Trả lời trong 15 phút', 'https://zalo.me/ingo'],
+      ['chat', 1, 'Zalo OA', 'Trả lời trong 15 phút', 'https://zalo.me/gopush'],
       ['mail', 3, 'Email', 'support@gomax.vn', 'mailto:support@gomax.vn']
     ];
     var TONE = [['var(--soft-sky)', 'var(--soft-sky-ink)'], ['var(--soft-sage)', 'var(--soft-sage-ink)'],
@@ -137,40 +274,98 @@
   }
 
   /* --------------------------------------------------------- render */
+  function scopeNote(p) {
+    var sc = p.scope || 'shop';
+    if (sc === 'account') return '<span class="ig-scope">' + ic('layers') + 'Dùng chung mọi shop</span>';
+    if (sc === 'multi' && state.all) return '<span class="ig-scope is-all">' + ic('store') + 'Tất cả cửa hàng</span>';
+    var sh = S.shop(state.shop);
+    return '<span class="ig-scope">' + sh.flag + ' ' + U.esc(sh.name) + '</span>';
+  }
+
   function ctxFor(p) {
-    var v = vs(p.id);
+    var v = vs(p.id), scope = scopeOf(p);
     return {
-      shop: S.shop(state.shop), lang: state.lang, v: v,
-      head: function (actions) { return U.pageHead({ title: label(p), desc: desc(p), actions: actions }); }
+      shop: S.shop(state.shop), scope: scope, all: scope === 'all', id: cur && cur.id, lang: state.lang, v: v,
+      head: function (actions, o) {
+        return U.pageHead({ title: (o && o.title) || label(p), desc: (o && o.desc) || desc(p), actions: actions,
+          note: scopeNote(p), crumb: o && o.crumb });
+      }
     };
+  }
+
+  /* trang thao tác trên một shop nhưng đang xem Tất cả cửa hàng: hỏi chọn shop */
+  function shopPicker(p) {
+    return U.pageHead({ title: label(p), desc: desc(p), note: '<span class="ig-scope is-all">' + ic('store') + 'Tất cả cửa hàng</span>' }) +
+      '<div class="ig-section">' +
+        U.banner('Trang này thao tác trên <b>từng cửa hàng</b> (duyệt, gửi, đồng bộ đều gọi API của shop đó). Chọn cửa hàng để tiếp tục.') +
+        '<div class="ig-grid ig-grid-3">' + S.data.shops.map(function (sh) {
+          var st = S.stats(sh.id);
+          return '<button class="ig-pickshop" data-pickshop="' + sh.id + '">' +
+            '<b>' + sh.flag + ' ' + U.esc(sh.name) + '</b>' + U.tag(sh.status === 'ok' ? 'Đã ủy quyền' : (sh.status === 'warn' ? 'Sắp hết hạn' : 'Đã hết hạn')) +
+            '<span class="gm-help">' + st.pending + ' mẫu chờ duyệt · ' + st.working + ' Creator hợp tác</span></button>';
+        }).join('') + '</div></div>';
+  }
+
+  function viewHTML(p) {
+    if (state.all && (p.scope || 'shop') === 'shop') return shopPicker(p);
+    return P[p.id](ctxFor(p));
   }
 
   function render() {
     var path = currentPath(), hit = match(path);
     if (!hit) { location.hash = '#/home'; return; }
+    if (hit.alias) {
+      if (hit.alias.indexOf('ai=1') > -1) state.ai = true;
+      location.hash = '#' + hit.alias.split('?')[0]; return;
+    }
 
     if (hit.pub) {
       cur = null;
-      document.title = 'inGo — ' + label(hit.pub);
+      document.title = 'GOPUSH — ' + label(hit.pub);
       document.body.innerHTML = P[hit.pub.id]({ lang: state.lang }) + support();
       window.scrollTo(0, 0);
       return;
     }
 
     var m = hit.route.module, p = hit.route.page;
-    if (hit.shop && hit.shop !== state.shop && S.shop(hit.shop).id === hit.shop) {
-      state.shop = hit.shop; store.set('ingo.shop', hit.shop);
+    /* shop trong URL quyết định phạm vi: /s/all/… = Tất cả, /s/{id}/… = shop đó */
+    if (hit.shop === 'all') { if (!state.all) { state.all = true; store.set('gopush.all', '1'); } }
+    else if (hit.shop && S.shop(hit.shop).id === hit.shop) {
+      state.shop = hit.shop; store.set('gopush.shop', hit.shop);
+      if (state.all) { state.all = false; store.set('gopush.all', '0'); }
     }
-    document.title = 'inGo — ' + label(p);
-    cur = { module: m, page: p };
+    document.title = 'GOPUSH — ' + label(p);
+    cur = { module: m, page: p, id: hit.id };
 
     document.body.innerHTML =
-      '<div class="ig-app' + (state.sub === 'collapsed' ? ' sub-collapsed' : '') + '">' + topbar() +
-        '<div class="ig-body">' + rail(m) + subnav(m, p) +
+      '<div class="ig-app' + (state.sub === 'collapsed' ? ' sub-collapsed' : '') + (state.ai ? ' ai-open' : '') + '">' + topbar() +
+        '<div class="ig-body">' + sidebar(m, p) +
           '<button class="ig-collapse" id="sub-btn" aria-controls="subnav" aria-expanded="' + (state.sub === 'open') +
             '" title="' + U.attr(t(state.sub === 'open' ? 'collapse' : 'expand')) + '">' + ic('left') + '</button>' +
-          '<main class="ig-content" id="view">' + P[p.id](ctxFor(p)) + '</main>' +
+          '<main class="ig-content" id="view">' + viewHTML(p) + '</main>' +
+          (state.ai ? P.aiPanel(aiCtx()) : '') +
         '</div></div>' + support() + '<div id="layer"></div>';
+    sheet(document.getElementById('view'));
+  }
+
+  /* Bố cục GoMax Console: tiêu đề trang nằm ngoài card, mọi khối phía dưới
+     (tab, bộ lọc, bảng, section) gom vào một card trắng trên nền canvas. */
+  function sheet(view) {
+    if (!view) return;
+    var box = document.createElement('div');
+    box.className = 'ig-sheet';
+    [].slice.call(view.childNodes).forEach(function (n) {
+      if (!(n.classList && n.classList.contains('ig-page-head'))) box.appendChild(n);
+    });
+    if (box.childNodes.length) view.appendChild(box);
+  }
+
+  /* cập nhật dòng hạn mức dưới tên shop (không còn chuông trên topbar) */
+  function updateBell() {
+    var q = document.querySelector('.ig-shop .qt');
+    if (q) q.outerHTML = quotaLine();
+    var b = document.getElementById('notif-btn');
+    if (b) b.innerHTML = ic('bell') + bellDot();
   }
 
   /* vẽ lại phần nội dung, giữ nguyên vị trí cuộn */
@@ -180,18 +375,14 @@
     var view = document.getElementById('view');
     if (!view) { render(); return; }
     var top = view.scrollTop;
-    view.innerHTML = P[cur.page.id](ctxFor(cur.page));
+    view.innerHTML = viewHTML(cur.page);
+    sheet(view);
+    if (state.ai) renderAI();
     view.scrollTop = top;
     /* cập nhật badge sidebar và hạn mức */
     var sub = document.getElementById('subnav');
-    if (sub) sub.outerHTML = subnav(cur.module, cur.page);
-    var q = document.querySelector('.ig-quota');
-    if (q) {
-      var sh = S.shop(state.shop);
-      q.innerHTML = ic('send') + '<b class="gm-num">' + S.num(sh.used) + '</b><span class="sl">/' +
-        S.num(S.quota(sh.id).cap) + '</span>' +
-        '<span class="track"><i style="width:' + Math.min(100, sh.used / (S.quota(sh.id).cap || 1) * 100) + '%"></i></span>';
-    }
+    if (sub) sub.outerHTML = sidebar(cur.module, cur.page);
+    updateBell();
   }
   /* vẽ lại riêng thanh chân wizard để không cắt mạch gõ của người dùng */
   function refreshFoot() {
@@ -247,7 +438,7 @@
         '<span class="gm-check' + (on ? ' on' : '') + '"></span>' +
         '<span style="flex:1">' + U.esc(o.l) + '</span></button>';
     }).join('') +
-      (sel.length ? '<div class="h" style="border-top:1px solid var(--line);margin-top:4px;padding-top:6px">' +
+      (sel.length ? '<div class="h" style="border-top:1px solid var(--border-light);margin-top:4px;padding-top:6px">' +
         '<button class="gm-btn gm-btn-link gm-btn-sm" data-multi="' + U.attr(key) + '" data-val="__clear">Bỏ chọn tất cả</button></div>' : '');
     var el = openMenu(anchor, html);
     el.setAttribute('data-keepopen', '1');
@@ -349,7 +540,7 @@
   function confirmBox(title, text, okLabel, onOk) {
     openModal(U.modal({
       title: title,
-      body: '<p style="margin:0;font-size:14px;line-height:22px;color:var(--ink-secondary)">' + U.esc(text) + '</p>',
+      body: '<p style="margin:0;font-size:14px;line-height:22px;color:var(--text-secondary)">' + U.esc(text) + '</p>',
       foot: U.btn('Hủy', { act: 'modal:close' }) + U.btn(okLabel, { variant: 'danger', act: 'modal:ok' })
     }));
     MODAL_OK = onOk;
@@ -408,7 +599,7 @@
   function rateModal(sp) {
     openModal(U.modal({
       title: 'Để lại đánh giá',
-      body: '<p style="margin:0 0 10px;font-size:13.5px;color:var(--ink-secondary)">Đánh giá hợp tác với <b>@' +
+      body: '<p style="margin:0 0 10px;font-size:13.5px;color:var(--text-secondary)">Đánh giá hợp tác với <b>@' +
           U.esc(sp.creatorInfo.username) + '</b> ở yêu cầu mẫu <b>' + U.esc(sp.productInfo.title) + '</b>.</p>' +
         '<div class="ig-rate">' + [1, 2, 3, 4, 5].map(function (n) {
           return '<button class="' + (n <= RATE ? 'on' : '') + '" data-do="sample:star:' + n + '" ' +
@@ -555,7 +746,7 @@
         .sort(function (a, b) { return b.gmv30 - a.gmv30; }).slice(0, 50)
         .map(function (c) { return [c.name, c.gmv30, c.postRate + '%', c.cat]; });
     }
-    S.download('ingo-' + name + '-' + S.fmtDate(new Date()).replace(/\//g, '') + '.csv', S.toCSV(cols, rows));
+    S.download('gopush-' + name + '-' + S.fmtDate(new Date()).replace(/\//g, '') + '.csv', S.toCSV(cols, rows));
     toast('Đã tải xuống ' + rows.length + ' dòng');
   }
 
@@ -567,6 +758,21 @@
     switch (verb) {
       case 'go': location.hash = '#' + act.slice(3); return true;
       case 'toast': toast(act.slice(6)); return true;
+
+      /* --- việc cần xử lý --- */
+      case 'inbox': {
+        var ikey = a.slice(2).join(':'), ist2 = db.inboxState = db.inboxState || {};
+        ist2[ikey] = ist2[ikey] || {};
+        if (arg === 'done') { ist2[ikey].done = true; ist2[ikey].doneAt = S.fmtDateTime(new Date()); toast('Đã đánh dấu xong'); }
+        if (arg === 'undo') { ist2[ikey].done = false; toast('Đã mở lại việc'); }
+        S.save(); refresh(); updateBell(); return true;
+      }
+      /* --- bước phễu trong chi tiết chiến dịch: lọc tab tương ứng --- */
+      case 'camp':
+        if (arg === 'stage') { var sp2 = arg2.split(':'); view.tab = parseInt(sp2[0], 10) || 0; view.f.stage = sp2[1] || ''; refresh(); }
+        return true;
+      /* --- đổi kiểu xem Bảng / Kanban --- */
+      case 'view': view.view = arg; S.data.settings.libraryView = arg; S.save(); refresh(); return true;
 
       /* --- Creator --- */
       case 'creator':
@@ -804,23 +1010,21 @@
           } else if (arg === 'del') {
             confirmBox('Xóa chiến dịch', 'Xóa “' + cp.name + '”? Không thể hoàn tác.', 'Xóa', function () {
               db.campaigns = db.campaigns.filter(function (x) { return x.id !== arg2; });
-              S.save(); closeLayer(); toast('Đã xóa chiến dịch'); refresh();
+              S.save(); closeLayer(); toast('Đã xóa chiến dịch');
+              if (cur && cur.page.id === 'campaign-detail') location.hash = '#/s/' + cp.shopId + '/campaigns/' + (cp.kind === 'invite' ? 'invites' : 'messages');
+              else refresh();
             });
             return true;
           } else if (arg === 'open') {
-            var tp = S.tpl(cp.templateId);
-            openModal(U.modal({
-              title: cp.name, wide: true,
-              body: U.kv([['Trạng thái', U.tag(cp.status), true], ['Loại', cp.kind === 'invite' ? 'Lời mời hàng loạt' : 'Nhắn tin hàng loạt'],
-                ['Tiến độ', cp.sent + ' / ' + cp.total], ['Chấp nhận', cp.sent ? Math.round(cp.accepted / cp.sent * 100) + '%' : '—'],
-                ['Mẫu', tp ? tp.name : '—'], ['Sản phẩm', (cp.products || []).join(', ') || 'Tất cả'],
-                ['Giãn cách', cp.gap], ['Người tạo', cp.by], ['Bắt đầu', cp.at]]) +
-                (tp ? '<div style="height:16px"></div>' + U.card({ title: 'Nội dung gửi', body: '<p style="margin:0;font-size:14px;line-height:22px">' + U.esc(tp.body) + '</p>' }) : ''),
-              foot: U.btn('Đóng', { act: 'modal:close' }) +
-                (cp.status === 'Đang chạy' ? U.btn('Tạm dừng', { icon: 'pause', act: 'campaign:pause:' + cp.id })
-                  : U.btn('Chạy', { variant: 'primary', icon: 'play', act: 'campaign:run:' + cp.id }))
-            }));
+            location.hash = '#/s/' + cp.shopId + '/campaigns/c/' + cp.id;
             return true;
+          } else if (arg === 'refill') {
+            cp.total += 50; if (cp.status === 'Hoàn thành') cp.status = 'Đang chạy';
+            toast('Đã bù thêm 50 Creator khớp bộ lọc vào “' + cp.name + '”');
+          } else if (arg === 'extend') {
+            cp.endDays = (cp.endDays || 0) + 14;
+            var ed = new Date(2026, 8, 24); ed.setDate(ed.getDate() + cp.endDays); cp.end = S.fmtDate(ed);
+            toast('Đã gia hạn tới ' + cp.end);
           }
           S.log('Cập nhật chiến dịch “' + cp.name + '”', 'Chiến dịch', sid);
           S.save(); closeLayer(); refresh();
@@ -922,7 +1126,7 @@
           var sp0 = find(arg2); if (!sp0) return true;
           openModal(U.modal({
             title: 'Duyệt mẫu',
-            body: '<p style="margin:0 0 4px;font-size:14px;line-height:22px;color:var(--ink-secondary)">' +
+            body: '<p style="margin:0 0 4px;font-size:14px;line-height:22px;color:var(--text-secondary)">' +
               'Bạn có đồng ý yêu cầu mẫu của <b>@' + U.esc(sp0.creatorInfo.username) + '</b> không?</p>' +
               U.kv([['Sản phẩm', sp0.productInfo.title], ['SKU', sp0.sku],
                 ['Hoa hồng', sp0.commissionRate + '%'],
@@ -940,7 +1144,7 @@
           REJ = REJ || 'NOT_MATCH';
           openModal(U.modal({
             title: 'Duyệt mẫu',
-            body: '<p style="margin:0 0 10px;font-size:13.5px;color:var(--ink-secondary)">Vui lòng chọn lý do từ chối</p>' +
+            body: '<p style="margin:0 0 10px;font-size:13.5px;color:var(--text-secondary)">Vui lòng chọn lý do từ chối</p>' +
               '<div class="ig-reasons">' + S.REJECT_REASONS.map(function (r) {
                 return '<label class="ig-reason' + (REJ === r.v ? ' on' : '') + '" data-do="sample:reason:' + r.v + '">' +
                   '<span class="gm-radio' + (REJ === r.v ? ' on' : '') + '"></span>' +
@@ -1341,9 +1545,9 @@
         } else if (arg === 'sync') { dispatch('sync:shop', el); }
         else if (arg === 'unlink') {
           var sh6 = S.shop(arg2);
-          confirmBox('Gỡ liên kết', 'Gỡ ' + sh6.name + ' khỏi inGo? Dữ liệu đã đồng bộ sẽ bị xóa.', 'Gỡ liên kết', function () {
+          confirmBox('Gỡ liên kết', 'Gỡ ' + sh6.name + ' khỏi GOPUSH? Dữ liệu đã đồng bộ sẽ bị xóa.', 'Gỡ liên kết', function () {
             db.shops = db.shops.filter(function (s) { return s.id !== arg2; });
-            if (state.shop === arg2 && db.shops.length) { state.shop = db.shops[0].id; store.set('ingo.shop', state.shop); }
+            if (state.shop === arg2 && db.shops.length) { state.shop = db.shops[0].id; store.set('gopush.shop', state.shop); }
             S.save(); closeLayer(); toast('Đã gỡ liên kết'); location.hash = '#/shops';
           });
         }
@@ -1384,9 +1588,7 @@
       /* --- báo cáo --- */
       case 'report':
         if (arg === 'focus') {
-          var list = db.campaigns.filter(function (x) { return x.shopId === sid && x.kind === 'invite'; });
-          list.forEach(function (x, i) { if (x.id === arg2) view.focus = i; });
-          refresh();
+          view.focusId = arg2; refresh();
         } else if (arg === 'open') {
           var rp = null; db.aiReports.forEach(function (r) { if (r.id === arg2) rp = r; });
           if (rp) openModal(U.modal({
@@ -1410,23 +1612,24 @@
         }
         return true;
 
-      /* --- inGo AI --- */
+      /* --- GOPUSH AI --- */
       case 'ai':
         if (arg === 'ask') { askAI(arg2); }
         else if (arg === 'send') {
-          var ta = document.querySelector('[data-prompt]');
+          var ta = document.querySelector('#aipanel [data-prompt]') || document.querySelector('[data-prompt]');
           var q = ta ? ta.value.trim() : '';
           if (!q) { toast('Nhập câu hỏi trước đã'); return true; }
           askAI(q);
-        } else if (arg === 'clear') { db.chat = []; S.save(); refresh(); }
+        } else if (arg === 'clear') { db.chat = []; S.save(); renderAI(); }
+        else if (arg === 'close') { state.ai = false; renderAI(); }
         else if (arg === 'redo') { var last = db.chat.filter(function (m) { return m.role === 'me'; }).pop(); if (last) askAI(last.text, true); }
         else if (arg === 'report') {
           db.aiReports.unshift({ id: S.uid('r'), name: 'Phân tích theo yêu cầu ' + S.fmtDateTime(new Date()),
             kind: 'Phân tích', scope: S.shop(sid).name + ' · 30 ngày', at: S.fmtDateTime(new Date()),
-            by: 'inGo AI', status: 'Hoàn thành' });
+            by: 'GOPUSH AI', status: 'Hoàn thành' });
           S.save(); toast('Đã tạo report mới trong mục Report'); refresh();
         } else if (arg === 'resetSettings') {
-          confirmBox('Khôi phục mặc định', 'Đặt lại toàn bộ thiết lập inGo AI về mặc định?', 'Khôi phục', function () {
+          confirmBox('Khôi phục mặc định', 'Đặt lại toàn bộ thiết lập GOPUSH AI về mặc định?', 'Khôi phục', function () {
             S.reset(); closeLayer(); toast('Đã khôi phục mặc định'); refresh(true);
           });
         } else if (arg === 'addExample') {
@@ -1439,7 +1642,15 @@
           db.settings.ai.examples.splice(parseInt(arg2, 10), 1); S.save(); refresh();
         }
         return true;
-      case 'ask': location.hash = '#/ai'; return true;
+      case 'ask': {
+        /* thanh hỏi nhanh dưới bảng: có chữ thì hỏi luôn, không thì mở panel */
+        var box = el && el.closest ? el.closest('.ig-ask') : null;
+        var inp = box ? box.querySelector('input') : null;
+        var qq = inp ? inp.value.trim() : '';
+        if (inp) inp.value = '';
+        if (qq) askAI(qq); else toggleAI(true);
+        return true;
+      }
 
       /* --- cài đặt --- */
       case 'set': togglePath(act.slice(4)); refresh(); return true;
@@ -1609,20 +1820,60 @@
     return false;
   }
 
-  /* trả lời của inGo AI */
+  /* --------------------------------------------------------- GOPUSH AI dạng panel
+     Panel nằm cạnh nội dung, tự đọc ngữ cảnh trang đang xem: phạm vi shop,
+     bộ lọc đang bật, số dòng đang chọn. Câu trả lời vẫn do P.aiAnswer dựng. */
+  var AI_SUGGEST = {
+    overview: ['Hôm nay nên ưu tiên việc gì?', 'Tóm tắt 7 ngày qua', 'Shop nào đang tụt GMV?'],
+    creators: ['Creator nào nên tăng hoa hồng tháng tới?', 'Lọc Creator giống nhóm đang bán tốt', 'Ai nhận mẫu mà chưa đăng?'],
+    collab: ['So sánh hiệu quả các chiến dịch đang chạy', 'Chiến dịch nào nên dừng?', 'Viết lại mẫu lời mời cho tỉ lệ chấp nhận cao hơn'],
+    samples: ['Vận đơn nào quá hạn chưa có video?', 'Creator nào hay xin mẫu mà không đăng?', 'Tỉ lệ lên nội dung theo sản phẩm'],
+    results: ['Tổng quan 30 ngày qua', 'Nguồn GMV đến từ đâu?', 'Dự báo GMV tháng tới'],
+    business: ['Ai đang dùng nhiều hạn mức nhất?', 'Shop nào sắp hết hạn ủy quyền?', 'Tóm tắt nhật ký tuần này']
+  };
+
+  function aiCtx() {
+    var p = cur ? cur.page : null, m = cur ? cur.module : null, view = p ? vs(p.id) : null;
+    var nf = view ? Object.keys(view.f).filter(function (k) { return view.f[k] && view.f[k] !== 'all'; }).length + (view.q ? 1 : 0) : 0;
+    var nsel = view ? Object.keys(view.sel || {}).filter(function (k) { return view.sel[k]; }).length : 0;
+    return {
+      page: p ? label(p) : '', scope: state.all ? 'Tất cả cửa hàng' : S.shop(state.shop).name,
+      filters: nf, selected: nsel, suggest: AI_SUGGEST[m ? m.id : 'overview'] || AI_SUGGEST.overview,
+      shop: S.shop(state.shop), period: S.data.settings.ai.period
+    };
+  }
+
+  function renderAI() {
+    var old = document.getElementById('aipanel');
+    var app = document.querySelector('.ig-app');
+    if (app) app.classList.toggle('ai-open', state.ai);
+    var aib = document.getElementById('ai-btn');
+    if (aib) aib.classList.toggle('on', state.ai);
+    if (!state.ai) { if (old) old.remove(); return; }
+    var html = P.aiPanel(aiCtx());
+    if (old) old.outerHTML = html;
+    else { var body = document.querySelector('.ig-body'); if (body) body.insertAdjacentHTML('beforeend', html); }
+    var sc = document.querySelector('.ig-ai-scroll');
+    if (sc) sc.scrollTop = sc.scrollHeight;
+  }
+
+  function toggleAI(force) {
+    state.ai = force === true ? true : !state.ai;
+    renderAI();
+    if (state.ai) { var ta = document.querySelector('#aipanel [data-prompt]'); if (ta) ta.focus(); }
+  }
+
   function askAI(q, redo) {
     var db = S.data;
-    if (!redo) db.chat.push({ role: 'me', text: q });
+    if (!redo) db.chat.push({ role: 'me', text: q, ctx: aiCtx().page });
     db.chat.push({ role: 'ai', html: '<p class="gm-muted">Đang đọc dữ liệu…</p>' });
     S.save();
-    if (location.hash !== '#/ai') { location.hash = '#/ai'; } else { refresh(); }
+    state.ai = true; renderAI();
     setTimeout(function () {
       var ctx = { shop: S.shop(state.shop), v: v() };
       db.chat[db.chat.length - 1] = { role: 'ai', html: P.aiAnswer(q, ctx) };
-      if (db.settings.ai.logAll) S.log('Hỏi inGo AI: ' + q.slice(0, 60), 'Khác', state.shop);
-      S.save(); refresh();
-      var wrap = document.querySelector('.ig-chat-wrap');
-      if (wrap) wrap.scrollIntoView({ block: 'end' });
+      if (db.settings.ai.logAll) S.log('Hỏi GOPUSH AI: ' + q.slice(0, 60), 'Khác', state.shop);
+      S.save(); renderAI();
     }, 420);
   }
 
@@ -1682,6 +1933,11 @@
       var c2 = S.creator(rest); if (c2) { S.rel(c2, sid).owner = val; S.save(); openDrawer(P.creatorDrawer(rest, sid)); refresh(); }
       return;
     }
+    if (head === 'inbox') {
+      var key0 = rest.replace(/^owner:/, ''), ist = P.inboxItems && (db.inboxState = db.inboxState || {});
+      ist[key0] = ist[key0] || {}; ist[key0].owner = val;
+      S.log('Giao việc cho ' + val, 'Khác'); S.save(); toast('Đã giao cho ' + val); refresh(); return;
+    }
     if (head === 'member') {
       db.members.forEach(function (m) { if (m.id === rest) m.role = val; });
       S.log('Đổi vai trò thành viên', 'Nhóm'); S.save(); toast('Đã đổi vai trò'); refresh(); return;
@@ -1720,44 +1976,40 @@
 
   /* --------------------------------------------------------- menu hệ thống */
   function shopMenu(anchor) {
-    var html = '<div class="h">Cửa hàng của bạn</div>' + S.data.shops.map(function (s) {
-      var dot = s.status === 'ok' ? 'var(--success)' : (s.status === 'warn' ? 'var(--warning)' : 'var(--danger)');
-      return '<button data-shop="' + s.id + '"><span>' + s.flag + '</span><span style="flex:1">' + U.esc(s.name) +
-        '</span><i class="gm-dot" style="background:' + dot + '"></i>' + (s.id === state.shop ? ic('check') : '') + '</button>';
-    }).join('') + '<div class="h" style="border-top:1px solid var(--line);margin-top:4px;padding-top:8px">' +
+    var html = '<div class="h">Phạm vi xem</div>' +
+      '<button data-shop="all"><span>' + ic('store') + '</span><span style="flex:1">Tất cả cửa hàng</span>' +
+        '<span class="gm-help">gộp số liệu</span>' + (state.all ? ic('check') : '') + '</button>' +
+      '<div class="h" style="border-top:1px solid var(--border-light);margin-top:4px;padding-top:8px">Từng cửa hàng</div>' +
+      S.data.shops.map(function (s) {
+        var dot = s.status === 'ok' ? 'var(--success)' : (s.status === 'warn' ? 'var(--warning)' : 'var(--danger)');
+        return '<button data-shop="' + s.id + '"><span>' + s.flag + '</span><span style="flex:1">' + U.esc(s.name) +
+          '</span><i class="gm-dot" style="background:' + dot + '"></i>' + (!state.all && s.id === state.shop ? ic('check') : '') + '</button>';
+      }).join('') + '<div class="h" style="border-top:1px solid var(--border-light);margin-top:4px;padding-top:8px">' +
       '<a class="gm-link" href="#/shops">Quản lý cửa hàng</a></div>';
     openMenu(anchor, html);
   }
 
-  function notifMenu(anchor) {
-    var db = S.data, sid = state.shop, st = S.stats(sid);
-    var items = [];
-    if (st.pending) items.push([ 'box', st.pending + ' yêu cầu hàng mẫu chờ duyệt', 'Vừa xong', '/s/' + sid + '/samples']);
-    if (st.lateNoVideo) items.push(['truck', st.lateNoVideo + ' vận đơn quá 5 ngày chưa có video', 'Hôm nay', '/s/' + sid + '/samples/shipments']);
-    db.shops.filter(function (s) { return s.status !== 'ok'; }).forEach(function (s) {
-      items.push(['alert', s.name + ' cần cập nhật ủy quyền', s.expires, '/shops/' + s.id]);
-    });
-    openMenu(anchor, '<div class="h">Thông báo</div>' + (items.length ? items.map(function (i) {
-      return '<button data-go="' + i[3] + '">' + ic(i[0]) + '<span style="flex:1;text-align:left">' + U.esc(i[1]) +
-        '<br><small class="gm-muted">' + U.esc(i[2]) + '</small></span></button>';
-    }).join('') : '<div class="h">Không có thông báo mới</div>'));
-  }
-
   function userMenu(anchor) {
-    openMenu(anchor, '<div class="h">' + U.esc(USER()) + ' · ' + U.esc(S.data.settings.profile.email) + '</div>' +
+    openMenu(anchor, '<div class="ig-me-mini">' + U.bear() + '<span><b>' + U.esc(USER()) + '</b><small>' +
+        U.esc(S.data.settings.profile.email) + '</small></span></div>' +
       '<button data-go="/settings/profile">' + ic('user') + 'Hồ sơ</button>' +
       '<button data-go="/settings/billing">' + ic('card') + 'Gói &amp; thanh toán</button>' +
-      '<button data-go="/team/members">' + ic('team') + 'Nhóm</button>' +
+      '<div class="sep"></div>' +
+      '<div class="row">' + ic('globe') + '<span>Ngôn ngữ</span><span class="gm-seg">' +
+        '<button class="' + (state.lang === 'vi' ? 'on' : '') + '" data-lang="vi">VI</button>' +
+        '<button class="' + (state.lang === 'en' ? 'on' : '') + '" data-lang="en">EN</button></span></div>' +
+      '<div class="row">' + ic(state.theme === 'dark' ? 'moon' : 'sun') + '<span>Giao diện tối</span>' +
+        '<span class="gm-switch' + (state.theme === 'dark' ? ' on' : '') + '" data-themetoggle role="switch" aria-checked="' + (state.theme === 'dark') + '"></span></div>' +
+      '<button data-helpcenter>' + ic('help') + 'Trợ giúp &amp; liên hệ hỗ trợ</button>' +
+      '<div class="sep"></div>' +
       '<button data-reset>' + ic('refresh') + 'Đặt lại dữ liệu thử</button>' +
       '<button data-go="/">' + ic('logout') + U.esc(t('signout')) + '</button>');
   }
 
-  function setLang(l) { state.lang = l; store.set('ingo.lang', l); document.documentElement.lang = l; render(); }
+  function setLang(l) { state.lang = l; store.set('gopush.lang', l); document.documentElement.lang = l; render(); }
   function setTheme(th) {
-    state.theme = th; store.set('ingo.theme', th);
+    state.theme = th; store.set('gopush.theme', th);
     document.documentElement.setAttribute('data-theme', th);
-    var b = document.getElementById('theme-btn');
-    if (b) b.innerHTML = ic(th === 'dark' ? 'sun' : 'moon');
   }
 
   /* --------------------------------------------------------- sự kiện */
@@ -1769,14 +2021,32 @@
 
     /* menu hệ thống */
     if ((el = e.target.closest('#shop-btn'))) { e.preventDefault(); shopMenu(el); return; }
-    if ((el = e.target.closest('#notif-btn'))) { e.preventDefault(); notifMenu(el); return; }
-    if ((el = e.target.closest('#help-btn'))) { e.preventDefault(); location.hash = '#/ai'; return; }
     if ((el = e.target.closest('#user-btn'))) { e.preventDefault(); userMenu(el); return; }
-    if ((el = e.target.closest('[data-shop]'))) {
-      state.shop = el.getAttribute('data-shop'); store.set('ingo.shop', state.shop); closeMenus();
+    if ((el = e.target.closest('[data-shop], [data-pickshop]'))) {
+      var pick = el.getAttribute('data-shop') || el.getAttribute('data-pickshop');
+      if (pick === 'all') { state.all = true; }
+      else { state.all = false; state.shop = pick; store.set('gopush.shop', pick); }
+      store.set('gopush.all', state.all ? '1' : '0'); closeMenus();
       var hitNow = match(currentPath());
-      if (hitNow && hitNow.route && hitNow.route.page.shop) location.hash = href(hitNow.route.page);
-      else render();
+      if (hitNow && hitNow.route && hitNow.route.page.path.indexOf('{shop}') > -1) {
+        /* trang chi tiết (có id) không đổi shop được: về danh sách của mục cha */
+        var pg = hitNow.route.page.navAs && hitNow.id ? pageById(hitNow.route.page.navAs).page : hitNow.route.page;
+        var next = href(pg);
+        if (next === location.hash) render(); else location.hash = next;
+      } else render();
+      return;
+    }
+    /* bấm module trên sidebar: mở / thu menu con. Khi sidebar đang thu về cột icon
+       (hoặc màn hình hẹp) thì menu con bị ẩn, nên đi thẳng tới trang đầu của module. */
+    if ((el = e.target.closest('[data-navtoggle]'))) {
+      e.preventDefault();
+      var narrow = document.querySelector('.ig-app.sub-collapsed') || window.innerWidth <= 1100;
+      if (narrow) { location.hash = el.getAttribute('data-first'); return; }
+      var mid = el.getAttribute('data-navtoggle'), grp = el.parentNode, i = NAV_OPEN.indexOf(mid);
+      if (i > -1) NAV_OPEN.splice(i, 1); else NAV_OPEN.push(mid);
+      saveNav();
+      grp.classList.toggle('is-open', i < 0);
+      el.setAttribute('aria-expanded', String(i < 0));
       return;
     }
     if ((el = e.target.closest('[data-go]'))) { closeMenus(); location.hash = '#' + el.getAttribute('data-go'); return; }
@@ -1787,15 +2057,19 @@
       });
       return;
     }
-    if ((el = e.target.closest('#lang-btn'))) {
-      e.preventDefault();
-      openMenu(el, '<div class="h">' + U.esc(t('langNote')) + '</div>' +
-        '<button data-lang="vi"><span>🇻🇳</span><span style="flex:1">Tiếng Việt</span>' + (state.lang === 'vi' ? ic('check') : '') + '</button>' +
-        '<button data-lang="en"><span>🇬🇧</span><span style="flex:1">English</span>' + (state.lang === 'en' ? ic('check') : '') + '</button>');
+    if ((el = e.target.closest('[data-lang]'))) { closeMenus(); setLang(el.getAttribute('data-lang')); return; }
+    if ((el = e.target.closest('[data-themetoggle]'))) {
+      setTheme(state.theme === 'dark' ? 'light' : 'dark');
+      el.classList.toggle('on', state.theme === 'dark'); el.setAttribute('aria-checked', String(state.theme === 'dark'));
       return;
     }
-    if ((el = e.target.closest('[data-lang]'))) { closeMenus(); setLang(el.getAttribute('data-lang')); return; }
-    if (e.target.closest('#theme-btn')) { setTheme(state.theme === 'dark' ? 'light' : 'dark'); return; }
+    if (e.target.closest('[data-helpcenter]')) {
+      closeMenus(); var sp0 = document.querySelector('.ig-support'); if (sp0) sp0.classList.add('open'); return;
+    }
+    if ((el = e.target.closest('#ai-btn'))) { e.preventDefault(); toggleAI(); return; }
+    if ((el = e.target.closest('#notif-btn'))) { e.preventDefault(); notifMenu(el); return; }
+    if ((el = e.target.closest('[data-cmd]'))) { e.preventDefault(); cmdRun(+el.getAttribute('data-cmd')); return; }
+    if (e.target.closest('#cmd') && !e.target.closest('#cmdpop')) { var gi2 = document.getElementById('gsearch'); if (gi2) gi2.focus(); return; }
     if ((el = e.target.closest('.ig-support-btn'))) {
       var sp = el.closest('.ig-support');
       el.setAttribute('aria-expanded', sp.classList.toggle('open'));
@@ -1803,7 +2077,7 @@
     }
     if ((el = e.target.closest('#sub-btn'))) {
       state.sub = state.sub === 'open' ? 'collapsed' : 'open';
-      store.set('ingo.sub', state.sub);
+      store.set('gopush.sub', state.sub);
       document.querySelector('.ig-app').classList.toggle('sub-collapsed', state.sub === 'collapsed');
       el.setAttribute('aria-expanded', state.sub === 'open');
       el.setAttribute('title', t(state.sub === 'open' ? 'collapse' : 'expand'));
@@ -1931,7 +2205,7 @@
       }, 220);
       return;
     }
-    if (el.id === 'gsearch') return;
+    if (el.id === 'gsearch') { cmdRender(el.value); return; }
 
     var wzk = el.getAttribute && el.getAttribute('data-wz');
     if (wzk && v().wz) {
@@ -2033,11 +2307,20 @@
 
   /* tìm nhanh trên thanh trên */
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Enter' && e.target.id === 'gsearch') {
-      var q = e.target.value.trim();
-      if (!q) return;
-      var vw = vs('discover'); vw.q = q; vw.tab = 0; vw.page = 1; vw.f = {};
-      location.hash = '#/s/' + state.shop + '/creators/discover';
+    if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+      e.preventDefault();
+      var gi = document.getElementById('gsearch'); if (gi) { gi.focus(); cmdRender(gi.value); }
+      return;
+    }
+    if (e.target.id === 'gsearch') {
+      if (e.key === 'ArrowDown') { e.preventDefault(); cmdMove(1); return; }
+      if (e.key === 'ArrowUp') { e.preventDefault(); cmdMove(-1); return; }
+      if (e.key === 'Enter') { e.preventDefault(); cmdRun(CMD.sel); return; }
+      if (e.key === 'Escape') { cmdClose(); return; }
+    }
+    if (e.key === 'Enter' && e.target.closest && e.target.closest('.ig-ask')) {
+      e.preventDefault();
+      var qa = e.target.value.trim(); if (qa) { e.target.value = ''; askAI(qa); } else toggleAI(true);
       return;
     }
     if (e.key === 'Enter' && e.target.hasAttribute('data-prompt') && !e.shiftKey) {
@@ -2046,6 +2329,56 @@
       return;
     }
     if (e.key === 'Escape') { closeMenus(); closeLayer(); MODAL_OK = null; }
+  });
+
+  /* --------------------------------------------------------- kéo thả trong Pipeline */
+  var DRAG = null;
+  document.addEventListener('dragstart', function (e) {
+    var card = e.target.closest && e.target.closest('.ig-kcard');
+    if (!card) return;
+    DRAG = card.getAttribute('data-cr');
+    e.dataTransfer.effectAllowed = 'move';
+    try { e.dataTransfer.setData('text/plain', DRAG); } catch (err) { /* bỏ qua */ }
+    card.classList.add('is-drag');
+  });
+  document.addEventListener('dragend', function (e) {
+    var card = e.target.closest && e.target.closest('.ig-kcard');
+    if (card) card.classList.remove('is-drag');
+    [].forEach.call(document.querySelectorAll('.ig-kcol.is-over'), function (c) { c.classList.remove('is-over'); });
+  });
+  document.addEventListener('dragover', function (e) {
+    var col = e.target.closest && e.target.closest('.ig-kcol');
+    if (!col || !DRAG) return;
+    e.preventDefault();
+    [].forEach.call(document.querySelectorAll('.ig-kcol.is-over'), function (c) { if (c !== col) c.classList.remove('is-over'); });
+    col.classList.add('is-over');
+  });
+  document.addEventListener('drop', function (e) {
+    var col = e.target.closest && e.target.closest('.ig-kcol');
+    if (!col || !DRAG) return;
+    e.preventDefault();
+    var cr = S.creator(DRAG), to = col.getAttribute('data-stage'), sid = state.shop;
+    DRAG = null;
+    if (!cr) return;
+    var r = S.rel(cr, sid), from = r.state;
+    if (from === to) { refresh(); return; }
+    function apply() {
+      r.state = to;
+      if (to === 'Đã mời' && !r.invitedAt) { r.invitedAt = S.fmtDateTime(new Date()); S.shop(sid).used = (S.shop(sid).used || 0) + 1; }
+      S.log('Chuyển ' + cr.name + ': ' + from + ' → ' + to, 'Creator', sid);
+      S.save(); closeLayer(); toast(cr.name + ' → ' + to); refresh();
+    }
+    if (from === 'Mới' && to === 'Đã mời') {
+      confirmBox('Gửi lời mời', 'Chuyển sang “Đã mời” sẽ gửi lời mời hợp tác tới @' + cr.user +
+        ' qua API TikTok Shop và trừ 1 lượt hạn mức hôm nay.', 'Gửi lời mời', apply);
+    } else apply();
+  });
+
+  /* bảng Tìm hoặc hỏi AI: mở khi focus, đóng khi bấm ra ngoài */
+  document.addEventListener('focusin', function (e) { if (e.target.id === 'gsearch') cmdRender(e.target.value); });
+  document.addEventListener('mousedown', function (e) {
+    var pop = document.getElementById('cmdpop');
+    if (pop && !pop.hidden && !(e.target.closest && e.target.closest('#cmd'))) pop.hidden = true;
   });
 
   window.addEventListener('hashchange', render);

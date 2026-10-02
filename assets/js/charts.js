@@ -1,4 +1,4 @@
-/* inGo — biểu đồ SVG thuần, không thư viện.
+/* GOPUSH — biểu đồ SVG thuần, không thư viện.
    Tất cả màu lấy từ token nên tự đổi theo theme sáng/tối. */
 (function (global) {
   'use strict';
@@ -18,6 +18,20 @@
     if (n >= 1e6) return dec(n / 1e6, n >= 1e7 ? 0 : 1) + 'tr';
     if (n >= 1e3) return dec(n / 1e3, n >= 1e4 ? 0 : 1) + 'K';
     return String(Math.round(n));
+  }
+
+  /* đường cong mềm qua các điểm (Catmull-Rom → Bézier), căng 0.2 để không vọt
+     quá đỉnh thật; giống kiểu đường của Trung tâm doanh nghiệp TikTok */
+  function smooth(p) {
+    if (p.length < 3) return 'M' + p.map(function (q) { return q[0] + ',' + q[1]; }).join(' L');
+    var d = 'M' + p[0][0] + ',' + p[0][1], t = 0.2;
+    for (var k = 0; k < p.length - 1; k++) {
+      var p0 = p[k - 1] || p[k], p1 = p[k], p2 = p[k + 1], p3 = p[k + 2] || p2;
+      d += ' C' + (p1[0] + (p2[0] - p0[0]) * t).toFixed(1) + ',' + (p1[1] + (p2[1] - p0[1]) * t).toFixed(1) +
+        ' ' + (p2[0] - (p3[0] - p1[0]) * t).toFixed(1) + ',' + (p2[1] - (p3[1] - p1[1]) * t).toFixed(1) +
+        ' ' + p2[0] + ',' + p2[1];
+    }
+    return d;
   }
 
   /* ---------------------------------------------------- đường + vùng nền */
@@ -46,19 +60,20 @@
 
     var paths = series.map(function (s, si) {
       var gid = id();
-      var pts = s.values.map(function (v, k) { return x(k) + ',' + y(v).toFixed(1); }).join(' ');
+      var pt = s.values.map(function (v, k) { return [x(k), +y(v).toFixed(1)]; });
+      var d = smooth(pt);
       var area = s.fill === false ? '' :
         '<defs><linearGradient id="' + gid + '" x1="0" y1="0" x2="0" y2="1">' +
-          '<stop offset="0%" stop-color="' + s.color + '" stop-opacity=".22"/>' +
+          '<stop offset="0%" stop-color="' + s.color + '" stop-opacity=".16"/>' +
           '<stop offset="100%" stop-color="' + s.color + '" stop-opacity="0"/>' +
         '</linearGradient></defs>' +
-        '<polygon points="' + L + ',' + (T + ih) + ' ' + pts + ' ' + (W - R) + ',' + (T + ih) + '" fill="url(#' + gid + ')"/>';
+        '<path d="' + d + ' L' + pt[pt.length - 1][0] + ',' + (T + ih) + ' L' + pt[0][0] + ',' + (T + ih) + ' Z" fill="url(#' + gid + ')"/>';
       var last = s.values.length - 1;
       return area +
-        '<polyline points="' + pts + '" fill="none" stroke="' + s.color + '" stroke-width="' + (si ? 2 : 2.2) +
-          '" stroke-linecap="round" stroke-linejoin="round"' + (s.dash ? ' stroke-dasharray="5 5"' : '') + '/>' +
-        '<circle cx="' + x(last) + '" cy="' + y(s.values[last]).toFixed(1) + '" r="3.6" fill="var(--bg-page)" stroke="' +
-          s.color + '" stroke-width="2.2"/>';
+        '<path d="' + d + '" fill="none" stroke="' + s.color + '" stroke-width="2"' +
+          ' stroke-linecap="round" stroke-linejoin="round"' + (s.dash ? ' stroke-dasharray="5 5"' : '') + '/>' +
+        '<circle cx="' + x(last) + '" cy="' + y(s.values[last]).toFixed(1) + '" r="3.5" fill="var(--bg-surface)" stroke="' +
+          s.color + '" stroke-width="2"/>';
     }).join('');
 
     return '<svg class="ig-svg" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' +

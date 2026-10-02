@@ -1,11 +1,11 @@
-/* inGo — tầng dữ liệu và trạng thái.
+/* GOPUSH — tầng dữ liệu và trạng thái.
    Dữ liệu sinh sẵn khi mở lần đầu, sau đó mọi thay đổi được lưu lại trong máy
    nên thao tác thử vẫn còn sau khi tải lại trang. Chỗ nào cần API thật của
    TikTok Shop (ủy quyền, đồng bộ, gửi lời mời) thì đánh dấu bằng cờ `pending`. */
 (function (global) {
   'use strict';
 
-  var KEY = 'ingo.db.v7';
+  var KEY = 'gopush.db.v7';
 
   /* ---------------------------------------------------------- tiện ích */
   var seedNum = 20260924;
@@ -175,7 +175,7 @@
           for (var j = 0; j < k; j++) { var b = pick(TT.BRANDS).v; if (out.indexOf(b) < 0) out.push(b); }
           return out;
         })(),                                                 /* brand_ids */
-        /* --- trường riêng của inGo --- */
+        /* --- trường riêng của GOPUSH --- */
         gpm: Math.round(gmv / Math.max(1, avgViews * 20 / 1000)),
         postRate: rate,
         country: rnd() > 0.2 ? 'Việt Nam' : pick(['Thái Lan', 'Malaysia']),
@@ -466,14 +466,14 @@
       { id: uid('a'), at: '23/09 09:02', who: 'user01', act: 'Cập nhật giới hạn gửi lên 500/ngày', shop: "VN 1300'S Coffee", kind: 'Cài đặt' }
     ];
 
-    /* report của inGo AI */
+    /* report của GOPUSH AI */
     db.aiReports = [
-      { id: uid('r'), name: 'Hiệu suất Creator – tháng 9/2026', kind: 'Phân tích', scope: "VN 1300'S Coffee · 30 ngày", at: '24/09 11:48', by: 'inGo AI', status: 'Hoàn thành' },
-      { id: uid('r'), name: 'So sánh 2 chiến dịch F&B', kind: 'So sánh', scope: "VN 1300'S Coffee · 2 chiến dịch", at: '23/09 16:02', by: 'inGo AI', status: 'Hoàn thành' },
+      { id: uid('r'), name: 'Hiệu suất Creator – tháng 9/2026', kind: 'Phân tích', scope: "VN 1300'S Coffee · 30 ngày", at: '24/09 11:48', by: 'GOPUSH AI', status: 'Hoàn thành' },
+      { id: uid('r'), name: 'So sánh 2 chiến dịch F&B', kind: 'So sánh', scope: "VN 1300'S Coffee · 2 chiến dịch", at: '23/09 16:02', by: 'GOPUSH AI', status: 'Hoàn thành' },
       { id: uid('r'), name: 'Cảnh báo Creator nhận mẫu không lên video', kind: 'Cảnh báo', scope: 'Tất cả shop · 14 ngày', at: '23/09 08:00', by: 'Lịch tự động', status: 'Hoàn thành' },
-      { id: uid('r'), name: 'Dự báo GMV tháng 10', kind: 'Dự báo', scope: 'Tất cả shop', at: '22/09 19:20', by: 'inGo AI', status: 'Hoàn thành' },
-      { id: uid('r'), name: 'Chân dung Creator ngành Gia dụng', kind: 'Phân tích', scope: 'TH Nara Home · 60 ngày', at: '21/09 10:14', by: 'inGo AI', status: 'Hoàn thành' },
-      { id: uid('r'), name: 'Tối ưu hoa hồng theo SKU', kind: 'Đề xuất', scope: "VN 1300'S Coffee", at: '20/09 09:30', by: 'inGo AI', status: 'Hoàn thành' },
+      { id: uid('r'), name: 'Dự báo GMV tháng 10', kind: 'Dự báo', scope: 'Tất cả shop', at: '22/09 19:20', by: 'GOPUSH AI', status: 'Hoàn thành' },
+      { id: uid('r'), name: 'Chân dung Creator ngành Gia dụng', kind: 'Phân tích', scope: 'TH Nara Home · 60 ngày', at: '21/09 10:14', by: 'GOPUSH AI', status: 'Hoàn thành' },
+      { id: uid('r'), name: 'Tối ưu hoa hồng theo SKU', kind: 'Đề xuất', scope: "VN 1300'S Coffee", at: '20/09 09:30', by: 'GOPUSH AI', status: 'Hoàn thành' },
       { id: uid('r'), name: 'Báo cáo tuần cho ban giám đốc', kind: 'Tổng hợp', scope: 'Tất cả shop · hằng tuần', at: 'Thứ 2 hằng tuần', by: 'Lịch tự động', status: 'Đã lên lịch' },
       { id: uid('r'), name: 'Phân tích Creator ngừng hợp tác', kind: 'Phân tích', scope: 'Tất cả shop · 90 ngày', at: '19/09 15:40', by: 'user01', status: 'Nháp' }
     ];
@@ -533,10 +533,10 @@
   function dropOld() {
     try {
       for (var i = 1; i < 20; i++) {
-        var k = 'ingo.db.v' + i;
+        var k = 'gopush.db.v' + i;
         if (k !== KEY) localStorage.removeItem(k);
       }
-      localStorage.removeItem('ingo.db');
+      localStorage.removeItem('gopush.db');
     } catch (e) { /* bỏ qua */ }
   }
   function load() {
@@ -638,7 +638,7 @@
     return DB.blacklist.some(function (b) { return b.creatorId === creatorId && b.shopId === shopId; });
   }
 
-  /* Trần cứng do TikTok cấp (invitation/limit) và trần mềm do inGo tự đặt.
+  /* Trần cứng do TikTok cấp (invitation/limit) và trần mềm do GOPUSH tự đặt.
      Số thật dùng để chặn thao tác luôn là cái nhỏ hơn. */
   function quota(shopId) {
     var sh = shop(shopId);

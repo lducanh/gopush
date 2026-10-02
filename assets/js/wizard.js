@@ -1,4 +1,4 @@
-/* inGo — luồng tạo lời mời hợp tác và đợt nhắn tin.
+/* GOPUSH — luồng tạo lời mời hợp tác và đợt nhắn tin.
    Dạng từng bước toàn trang: xong bước này mới mở được bước sau.
 
    Khác biệt với thao tác tay trên TikTok: TikTok bắt lọc và chọn Creator riêng
@@ -313,15 +313,15 @@
         U.iconBtn('trash', 'Bỏ sản phẩm', 'wz:delCard:' + p.id) + '</div>';
     }).join('');
 
-    return row('Tên đợt nhắn tin', 'Chỉ hiện trong inGo để bạn theo dõi, Creator không nhìn thấy.',
+    return row('Tên đợt nhắn tin', 'Chỉ hiện trong GOPUSH để bạn theo dõi, Creator không nhìn thấy.',
       textInput(w.name, 'name', 'Ví dụ: Nhắc Creator đã nhận mẫu', TT.LIMIT.nameMax), true) +
 
-    row('Phương thức gửi', 'inGo chỉ gửi qua API chính thức của TikTok Shop, không dùng plugin giả lập thao tác.',
+    row('Phương thức gửi', 'GOPUSH chỉ gửi qua API chính thức của TikTok Shop, không dùng plugin giả lập thao tác.',
       '<div class="ig-optcards is-2">' +
         radio(true, 'Nhắn tin hàng loạt qua API', 'Chạy nền, không chiếm trình duyệt, tắt máy vẫn chạy tiếp.',
           'wz:set:method:api', 'Nên dùng|ok') +
         '<label class="ig-optcard is-off"><span class="gm-radio"></span><span class="tx"><b>Plugin RPA trên trình duyệt</b>' +
-        '<span>Giả lập thao tác tay qua trình duyệt. inGo không hỗ trợ vì trái nguyên tắc chỉ dùng API chính thức.</span></span></label>' +
+        '<span>Giả lập thao tác tay qua trình duyệt. GOPUSH không hỗ trợ vì trái nguyên tắc chỉ dùng API chính thức.</span></span></label>' +
       '</div>') +
 
     row('Chế độ tin nhắn', 'Chế độ thẻ tiêu tốn ít hạn mức hơn và thường có tỉ lệ phản hồi cao hơn.',
@@ -463,7 +463,7 @@
     if (w.source === 'db') {
       var d = w.d, db = S.data;
       return '<div class="ig-wzfilter">' +
-        '<div class="ig-wzfhead"><span>' + ic('filter') + 'Điều kiện lọc kho inGo</span>' +
+        '<div class="ig-wzfhead"><span>' + ic('filter') + 'Điều kiện lọc kho GOPUSH</span>' +
         '<span class="spacer"></span>' + U.btn('Đặt lại', { sm: true, variant: 'link', act: 'wz:resetFilter' }) + '</div>' +
         quickChips(w) +
         '<div class="ig-wzfrow">' +
@@ -562,7 +562,7 @@
 
     var SRC = [
       ['tiktok', 'sky', 'store', 'TikTok Marketplace', 'Lấy trực tiếp qua API affiliate'],
-      ['db', 'sage', 'database', 'Database inGo', 'Kho Creator đã đồng bộ và sao lưu'],
+      ['db', 'sage', 'database', 'Database GOPUSH', 'Kho Creator đã đồng bộ và sao lưu'],
       ['manual', 'lilac', 'file', 'Creator chỉ định', 'Dán username hoặc tải file Excel']
     ];
     var sources = '<div class="ig-srccards">' + SRC.map(function (x) {
@@ -711,7 +711,7 @@
 
     var batchId = S.uid('lo');
     var baseName = (w.name || '').trim() || 'Chiến dịch không tên';
-    var srcName = { tiktok: 'TikTok Marketplace', db: 'Database inGo', manual: 'Creator chỉ định' }[w.source];
+    var srcName = { tiktok: 'TikTok Marketplace', db: 'Database GOPUSH', manual: 'Creator chỉ định' }[w.source];
     var productNames = (w.kind === 'invite' ? w.products.map(function (x) { return x.id; }) : w.cards)
       .map(function (id) {
         var p = null; (db.products[shopId] || []).forEach(function (q2) { if (q2.id === id) p = q2; });

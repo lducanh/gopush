@@ -1,6 +1,6 @@
-/* inGo — hợp đồng dữ liệu của TikTok Affiliate (ISV).
+/* GOPUSH — hợp đồng dữ liệu của TikTok Affiliate (ISV).
    Mọi thứ trong file này là ràng buộc của nền tảng: tên trường, enum, giới hạn.
-   Không tự đổi. Phần nào inGo tự quyết định thì để ở store.js hoặc wizard.js.
+   Không tự đổi. Phần nào GOPUSH tự quyết định thì để ở store.js hoặc wizard.js.
 
    Nguồn: affiliate.tiktok.com/api/v1/oec/affiliate
      POST /creator/marketplace/option        lấy danh sách brand, hạng mục, bậc GMV, ngôn ngữ
