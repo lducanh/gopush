@@ -46,15 +46,15 @@ assets/img/             logo GOPUSH, favicon, banner trang chủ, ảnh trang đ
 ## Thiết kế
 
 Toàn bộ CSS dựng theo design system **GoMax Console**: phẳng, gọn, nhiều thông tin,
-nền trung tính và **Oracle Red** làm màu nhấn. Tên token trong `tokens.css` giữ đúng
+nền trung tính và **màu đen** làm màu chủ đạo, Oracle Red làm màu phụ. Tên token trong `tokens.css` giữ đúng
 như bản gốc (`bg-topbar`, `bg-canvas`, `accent`, `text-secondary`, `radius-md`…); token
 nào bản gốc chưa có thì ghi chú "bổ sung" ngay trong file.
 
 | Nhóm | Giá trị chính |
 | --- | --- |
-| Khung | top bar Oracle Bark `#312D2A` · canvas Neutral 30 `#F1EFED` · card / sidebar `#ffffff` |
-| Chữ | `#312D2A` chính · Slate `#697778` phụ · `#7d7873` meta 12px |
-| Nhấn | Oracle Red `#C74634` (progress, nút, link) · `#9D3428` (focus, mục chọn) · Neutral 30 `#F1EFED` (nền mục chọn) |
+| Khung | top bar đen `#121415` · canvas Neutral 30 `#F1EFED` · card / sidebar `#ffffff` |
+| Chữ | `#121415` chính · `#6d6e70` phụ · `#8a8a8a` meta 12px |
+| Nhấn | đen `#121415` (nút, link, mục chọn) · Oracle Red `#C74634` (điểm nhấn/trạng thái) · Neutral 30 `#F1EFED` (nền chọn) |
 | Viền | `border` `#d3d4d5` cho input / nút · `border-light` `#ececed` cho card / divider |
 | Chữ | font hệ thống, 14px/22px, **chỉ hai độ đậm 400 và 500** |
 | Bo góc | 4px tag · 6px nút, input, mục menu · 8px card · pill cho badge |
@@ -62,32 +62,31 @@ nào bản gốc chưa có thì ghi chú "bổ sung" ngay trong file.
 
 Quy ước:
 
-- **Nút**: mặc định là outline trung tính 36px. Nút chính (`gm-btn-primary`) nền **Oracle Red**
+- **Nút**: mặc định là outline trung tính 36px. Nút chính (`gm-btn-primary`) nền **đen**
   `accent-dark` — màu chủ đạo, như nút "Thêm tài khoản nhà quảng cáo" của Trung tâm doanh
   nghiệp TikTok; tối đa một nút mỗi vùng. Nút nhỏ `gm-btn-sm` nền xám, không viền (Xem chi
   tiết, Hồ sơ); `gm-btn-soft` nền Neutral 30 cho hành động nhanh trong bảng (Mời, Xem lỗi).
 - **Trạng thái trong bảng** là chấm màu + chữ thường, không nền ("● Đã phê duyệt"); ngoài
   bảng mới dùng tag có nền.
-- **Ô số liệu** (KPI, stat tile) cùng một kiểu trên mọi trang: nền canvas, icon Oracle Red, số
+- **Ô số liệu** (KPI, stat tile) cùng một kiểu trên mọi trang: nền canvas, icon đen, số
   20px, dòng so sánh kỳ trước.
 - **Bảng**: cột ngày giờ, người, SKU, trạng thái giữ một dòng (`U.table` tự gắn class `nw`
   theo tên cột); ô Creator và sản phẩm tối đa 2 dòng, phần dư cắt bằng … và hiện đủ khi rê chuột.
 - **Mục đang chọn** (menu, tab cấp hai, checkbox, radio, trang hiện tại, bước wizard)
-  luôn dùng Oracle Red. Tab chính dùng vạch 2px màu chữ chính, giống trang Tài khoản của
+  luôn dùng đen. Tab chính dùng vạch 2px màu chữ chính, giống trang Tài khoản của
   Trung tâm doanh nghiệp TikTok.
-- **Link** chữ Oracle Red đậm, gạch chân khi rê chuột.
+- **Link** chữ đen đậm, gạch chân khi rê chuột.
 - **Tag** 22px bo 4px, nền nhạt + chữ đậm cùng tông: xanh lá thành công, cam cảnh báo,
-  đỏ Oracle cho lỗi, Slate/Pine cho loại.
+  Oracle Red cho lỗi, Slate/Pine cho loại.
 - **Thẻ KPI / stat tile**: nền canvas, không viền, số 20px/500 tabular-nums.
-- **Biểu đồ**: đường cong mềm, Oracle Red cho chuỗi chính, Pine/Ocean/Plum cho chuỗi so
+- **Biểu đồ**: đường cong mềm, đen cho chuỗi chính, Pine/Ocean/Plum cho chuỗi so
   sánh (như biểu đồ Chi phí / Lần hiển thị của TikTok). Biểu đồ đường luôn đặt cạnh một
   donut cơ cấu theo tỉ lệ 2/3 – 1/3 để chữ trục không bị phóng to. Sparkline, phễu và bảng xếp hạng chỉ dùng một
-  tông Oracle Red, nhạt dần theo thứ hạng.
-- Chữ đặt trên nền Oracle Red dùng `--on-accent`: trắng ở theme sáng, gần Bark ở theme tối để
+  tông đen, nhạt dần theo thứ hạng.
+- Chữ đặt trên nền đen dùng `--on-accent`: trắng ở theme sáng, đen ở theme tối để
   đủ tương phản.
 
-**Theme tối** là phần bổ sung (bộ gốc chỉ có theme sáng): cùng cấu trúc ba lớp, Oracle Red
-sáng hơn một bậc.
+**Theme tối** là phần bổ sung (bộ gốc chỉ có theme sáng): nền đen sâu, nút sáng để đủ tương phản.
 
 **Icon** dùng bộ **Lucide** (`lucide-static` 0.544, giấy phép ISC), nhúng sẵn trong
 `icons.js`, nét 1.5px, 16px (18px trên top bar).
@@ -95,13 +94,13 @@ sáng hơn một bậc.
 ## Logo
 
 `assets/img/logo-gomax.webp` là logo **GOPUSH · BY GOMAX DIGITAL** lấy từ file GOMAX
-được chỉ định. Trên top bar Oracle Bark tối dùng nguyên bản. Trên nền sáng (hero trang
+được chỉ định. Trên top bar đen dùng nguyên bản. Trên nền sáng (hero trang
 giới thiệu, thẻ đăng nhập) thêm class `ig-logo--ink` để đảo độ sáng logo.
 
 ## Khung ứng dụng
 
 ```
-top bar Oracle Bark 56px · logo | 🇻🇳 VN 1300'S Coffee ● ⌄ ....... [🔍 Tìm hoặc hỏi AI… ⌘K] ✦ 🔔⁷ [🐻 ⌄]
+top bar đen 56px · logo | 🇻🇳 VN 1300'S Coffee ● ⌄ ....... [🔍 Tìm hoặc hỏi AI… ⌘K] ✦ 🔔⁷ [🐻 ⌄]
                           828/4.000 lời mời hôm nay ▬
 sidebar 240px    · Nghiệp vụ: Tổng quan · Creator · Hợp tác · Hàng mẫu · Kết quả
                    Quản trị: Cài đặt doanh nghiệp  (bấm module để mở / thu menu con)

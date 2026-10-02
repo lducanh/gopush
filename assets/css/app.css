@@ -1,6 +1,6 @@
 /* GOPUSH — stylesheet ứng dụng, dựng theo design system GoMax Console.
    Phẳng, gọn, nhiều thông tin: top bar tối, sidebar trắng cố định, nền canvas
-   xám nhạt, card trắng viền hairline 1px, không bóng; Oracle Red làm màu nhấn.
+   xám nhạt, card trắng viền hairline 1px, không bóng; đen làm màu chủ đạo.
    Chữ font hệ thống, chỉ hai độ đậm 400 và 500. Mọi giá trị lấy từ tokens.css.
    Phần 1: component gm-*. Phần 2: khung, drawer, wizard và trang công khai. */
 
@@ -76,7 +76,7 @@ b, strong { font-weight: 500; }
 }
 .gm-btn-sm:hover { background: var(--bg-muted); }
 .gm-btn-sm .gm-icon { width: 14px; height: 14px; }
-/* primary: nền Oracle Red — màu chủ đạo, như nút "Thêm tài khoản nhà quảng cáo"
+/* primary: nền đen — màu chủ đạo, như nút "Thêm tài khoản nhà quảng cáo"
    của Trung tâm doanh nghiệp; tối đa một nút mỗi vùng */
 .gm-btn-primary { background: var(--accent-dark); border-color: var(--accent-dark); color: var(--on-accent); font-weight: 500; }
 .gm-btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
@@ -275,7 +275,7 @@ b, strong { font-weight: 500; }
 .gm-tab:hover { color: var(--text-primary); }
 .gm-tab.on { color: var(--text-primary); font-weight: 500; border-bottom-color: var(--text-primary); }
 .gm-tab.on .gm-badge { background: var(--accent-soft); color: var(--accent-dark); }
-/* tab cấp hai / nút chuyển: mục đang chọn chữ Oracle Red */
+/* tab cấp hai / nút chuyển: mục đang chọn chữ đen */
 .gm-seg { display: inline-flex; gap: 2px; padding: 2px; border-radius: var(--radius-sm); background: var(--bg-subtle); }
 .gm-seg button {
   all: unset;
@@ -372,7 +372,7 @@ b, strong { font-weight: 500; }
 .gm-avatar-sq { border-radius: var(--radius-sm); }
 .gm-avatar.is-bear { background: #f6ece0; padding: 0; overflow: hidden; }
 .gm-avatar.is-bear svg { width: 100%; height: 100%; display: block; }
-/* link: chữ Oracle Red đậm, gạch chân khi rê chuột */
+/* link: chữ đen đậm, gạch chân khi rê chuột */
 .gm-link {
   color: var(--accent-dark);
   cursor: pointer;
@@ -389,7 +389,7 @@ b, strong { font-weight: 500; }
 .gm-card .gm-table tr:last-child td { border-bottom: 0; }
 
 /* ============================================================ banner / empty / stepper */
-/* thông báo trong trang: nền Oracle Red nhạt, icon Oracle Red, không viền */
+/* thông báo trong trang: nền trung tính, icon đen, không viền */
 .gm-banner {
   display: flex;
   align-items: flex-start;
@@ -452,7 +452,7 @@ b, strong { font-weight: 500; }
 .gm-step-line { flex: 1; min-width: 16px; height: 1px; background: var(--border); }
 
 /* ============================================================ pager / funnel */
-/* phân trang: ô vuông xám, trang hiện tại viền Oracle Red */
+/* phân trang: ô vuông xám, trang hiện tại viền đen */
 .gm-pager {
   display: flex;
   align-items: center;
@@ -486,7 +486,7 @@ b, strong { font-weight: 500; }
 .gm-funnel .bar {
   height: 28px;
   border-radius: var(--radius-xs);
-  /* nhạt dần theo từng bước phễu, cùng tông Oracle Red với biểu đồ */
+  /* nhạt dần theo từng bước phễu, cùng tông đen với biểu đồ */
   background: var(--chart-1);
   background: color-mix(in srgb, var(--chart-1) calc(100% - var(--fn, 0) * 45%), var(--bg-muted));
   color: var(--on-accent);
@@ -523,8 +523,8 @@ b, strong { font-weight: 500; }
 .gm-topbar__right { margin-left: auto; display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
 
 .ig-logo { display: block; width: auto; flex: none; }
-.gm-topbar .ig-logo { height: 18px; }
-.ig-pub-nav .ig-logo { height: 20px; }
+.gm-topbar .ig-logo { height: 24px; }
+.ig-pub-nav .ig-logo { height: 27px; }
 /* logo trắng đặt trên nền sáng: đảo độ sáng để logo hợp nền sáng */
 .ig-logo--ink { filter: invert(1) hue-rotate(180deg); }
 :root[data-theme="dark"] .ig-logo--ink { filter: none; }
@@ -933,7 +933,7 @@ b, strong { font-weight: 500; }
 .ig-wrap { width: 100%; max-width: 1080px; margin: 0 auto; padding: 0 var(--space-6); }
 .ig-hero { padding: 56px 0 var(--space-8); text-align: center; }
 .ig-hero-mark { display: grid; place-items: center; margin-bottom: var(--space-6); }
-.ig-hero-mark .ig-logo { height: 30px; }
+.ig-hero-mark .ig-logo { height: 42px; }
 .ig-hero h1 { font-size: 40px; line-height: 48px; font-weight: 500; letter-spacing: -.02em; margin: 0 auto var(--space-3); max-width: 18ch; }
 .ig-hero p { font-size: 16px; line-height: 26px; color: var(--text-secondary); margin: 0 auto var(--space-6); max-width: 60ch; }
 .ig-hero .cta { display: flex; gap: var(--space-2); justify-content: center; flex-wrap: wrap; }
@@ -995,7 +995,7 @@ b, strong { font-weight: 500; }
 
 .ig-auth-pane { display: grid; place-items: center; padding: var(--space-8) var(--space-6); background: var(--bg-surface); }
 .ig-auth-card { width: 100%; max-width: 372px; display: flex; flex-direction: column; gap: var(--space-4); }
-.ig-auth-card > header .ig-logo { height: 24px; margin-bottom: var(--space-6); }
+.ig-auth-card > header .ig-logo { height: 34px; margin-bottom: var(--space-6); }
 
 .ig-auth-card h1 { font-size: 24px; line-height: 32px; font-weight: 500; margin: 0 0 var(--space-1); }
 .ig-auth-card header p { margin: 0; font-size: 14px; line-height: 22px; color: var(--text-secondary); }
@@ -1080,7 +1080,7 @@ b, strong { font-weight: 500; }
 .ig-menu .h { font-size: 12px; line-height: 18px; color: var(--text-tertiary); padding: 6px 8px; }
 
 /* ============================================================ biểu đồ SVG */
-/* nét mảnh, đường cong mềm, lưới hairline; Oracle Red cho chuỗi chính */
+/* nét mảnh, đường cong mềm, lưới hairline; đen cho chuỗi chính */
 .ig-svg { width: 100%; height: auto; display: block; }
 .ig-grid { stroke: var(--chart-grid); stroke-width: 1; }
 .ig-ax { font-family: var(--font-sans); font-size: 11px; fill: var(--text-tertiary); }
@@ -1140,7 +1140,7 @@ b, strong { font-weight: 500; }
 }
 .ig-banner img { width: 100%; height: auto; max-height: none; object-fit: cover; object-position: center; display: block; }
 
-/* thẻ lối tắt: hàng ngang gọn — ô icon Oracle Red, tên + một dòng mô tả, mũi tên phải */
+/* thẻ lối tắt: hàng ngang gọn — ô icon đen, tên + một dòng mô tả, mũi tên phải */
 .ig-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--space-3); }
 .ig-tile {
   display: flex;
@@ -2276,7 +2276,7 @@ b, strong { font-weight: 500; }
 }
 
 /* ============================================================ nội dung Creator đã đăng */
-/* tab cấp hai: chữ thường, mục đang chọn chữ Oracle Red — như "Tài khoản nhà quảng cáo"
+/* tab cấp hai: chữ thường, mục đang chọn chữ đen — như "Tài khoản nhà quảng cáo"
    dưới tab chính trên trang Tài khoản của TikTok */
 .ig-subtabs { display: flex; gap: var(--space-6); padding: var(--space-4) var(--space-6) 0; }
 .ig-subtabs button {

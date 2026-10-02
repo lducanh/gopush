@@ -1,41 +1,41 @@
 /* GOPUSH — design tokens.
    Nguồn: design system GoMax Console (tokens.json). Phẳng, gọn, nhiều thông tin,
-   tông Oracle/Redwood với Oracle Red và Oracle Bark làm nền tảng. Tên token giữ đúng như bản gốc;
+   tông đen làm chủ đạo, kết hợp Oracle Red và Redwood làm màu phụ. Tên token giữ đúng như bản gốc;
    các token đánh dấu "bổ sung" không có trong bản gốc, được suy ra từ nó để phủ
    những phần GOPUSH cần mà bộ gốc chưa có (cảnh báo, biểu đồ, theme tối). */
 
 :root {
   /* Khung ứng dụng */
-  --bg-topbar: #312d2a;
+  --bg-topbar: #121415;
   --bg-topbar-pill: rgba(255, 255, 255, 0.12);
   --bg-topbar-pill-hover: rgba(255, 255, 255, 0.2);   /* bổ sung */
   --bg-canvas: #f1efed;
   --bg-surface: #ffffff;
   --bg-subtle: #f7f5f3;
   --bg-muted: #e6e1dd;
-  --bg-hover: rgba(49, 45, 42, 0.06);                 /* bổ sung: hover trên mọi nền */
+  --bg-hover: rgba(18, 20, 21, 0.06);                 /* bổ sung: hover trên mọi nền */
   --bg-card-dark: #4a433e;
 
   /* Chữ */
-  --text-primary: #312d2a;
-  --text-secondary: #697778;
-  --text-tertiary: #7d7873;
-  --text-disabled: rgba(49, 45, 42, 0.32);            /* bổ sung */
+  --text-primary: #121415;
+  --text-secondary: #6d6e70;
+  --text-tertiary: #8a8a8a;
+  --text-disabled: rgba(18, 20, 21, 0.32);            /* bổ sung */
   --text-inverse: #ffffff;
   --text-on-topbar-muted: rgba(255, 255, 255, 0.72);  /* bổ sung */
 
   /* Đường kẻ */
-  --border: #d4cec9;
-  --border-light: #e6e1dd;
+  --border: #d3d4d5;
+  --border-light: #ececed;
 
-  /* Oracle Red / Bark */
-  --accent: #c74634;
-  --accent-dark: #9d3428;
-  --accent-hover: #81291f;                            /* bổ sung */
-  --accent-bright: #e36b58;
+  /* Màu chủ đạo đen, Oracle Red là điểm nhấn phụ */
+  --accent: #121415;
+  --accent-dark: #121415;
+  --accent-hover: #312d2a;                             /* bổ sung */
+  --accent-bright: #c74634;
   --accent-soft: #f1efed;
-  --accent-border: #d9aaa1;                           /* bổ sung: viền chip / chọn */
-  --on-accent: #ffffff;                               /* bổ sung: chữ trên nền Oracle Red */
+  --accent-border: #d3d4d5;                           /* bổ sung: viền chip / chọn */
+  --on-accent: #ffffff;                               /* bổ sung: chữ trên nền đen */
 
   /* Trạng thái */
   --success: #5c926d;
@@ -61,19 +61,19 @@
   --on-pastel: #312d2a;
 
   /* Biểu đồ: màu phụ Redwood */
-  --chart-1: #c74634;
+  --chart-1: #121415;
   --chart-2: #5c926d;
   --chart-3: #558ea4;
   --chart-4: #deb068;
   --chart-5: #846a92;
   --chart-6: #a36472;
   --chart-7: #697778;
-  --chart-ink: #312d2a;
-  --chart-1-mid: #d98778;
-  --chart-1-soft: #edc7c0;
+  --chart-ink: #121415;
+  --chart-1-mid: #55585a;
+  --chart-1-soft: #cfd0d1;
   --chart-grid: #e6e1dd;
 
-  --overlay: rgba(49, 45, 42, 0.45);
+  --overlay: rgba(18, 20, 21, 0.45);
 
   /* Chữ: một họ font hệ thống, chỉ dùng 400 và 500 */
   --font-sans: -apple-system, system-ui, "Segoe UI", Roboto, Ubuntu, "Helvetica Neue", Helvetica, Arial, sans-serif;
@@ -111,7 +111,7 @@
   --drawer-width: 440px;
 }
 
-/* Theme tối: cùng cấu trúc ba lớp và Oracle Red sáng hơn để đủ tương phản. */
+/* Theme tối: đen sâu, nút sáng để đủ tương phản. */
 :root[data-theme="dark"] {
   --bg-topbar: #1d1917;
   --bg-canvas: #211e1c;
@@ -129,12 +129,12 @@
   --border: #5a514b;
   --border-light: #3d3733;
 
-  --accent: #e36b58;
-  --accent-dark: #f08a79;
-  --accent-hover: #ffab9d;
-  --accent-soft: #48231f;
-  --accent-border: #81463c;
-  --on-accent: #1d1917;
+  --accent: #f1efed;
+  --accent-dark: #f1efed;
+  --accent-hover: #ffffff;
+  --accent-soft: #37312d;
+  --accent-border: #5a514b;
+  --on-accent: #121415;
 
   --success: #83b98f;
   --success-bg: #203526;
@@ -150,7 +150,7 @@
   --new-text: #d0b8d7;
   --on-pastel: #f1efed;
 
-  --chart-1: #e36b58;
+  --chart-1: #f1efed;
   --chart-2: #83b98f;
   --chart-3: #82b8c7;
   --chart-4: #f0cc72;
@@ -158,8 +158,8 @@
   --chart-6: #d395a5;
   --chart-7: #a9b8ba;
   --chart-ink: #f1efed;
-  --chart-1-mid: #b64c3d;
-  --chart-1-soft: #6f342c;
+  --chart-1-mid: #b7b5b3;
+  --chart-1-soft: #5a5755;
   --chart-grid: #3d3733;
 
   --overlay: rgba(0, 0, 0, 0.6);
