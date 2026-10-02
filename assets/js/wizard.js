@@ -434,7 +434,7 @@
   /* --------------------------------------------------------- khung bộ lọc */
   function quickChips(w) {
     var items = w.source === 'db'
-      ? [['Chưa mời', 'd.rel', 'Mới'], ['GMV trên 100tr', 'd.gmv', '100000000'],
+      ? [['Chưa mời', 'd.rel', 'Mới'], ['GMV trên ' + S.amt(1e8), 'd.gmv', '100000000'],
          ['Tỉ lệ đăng ≥ 60%', 'd.rate', '60'], ['Có liên hệ', 'd.contact', 'Có liên hệ']]
       : [['Chưa mời 90 ngày', '@notInvited90', 1], ['Ngôi sao sáng tạo', '@risingStar', 1],
          ['GMV trên 100tr', '#gmv', 3], ['Bán trên 1.000 món', '#unitsSold', 4]];
@@ -469,11 +469,11 @@
         '<div class="ig-wzfrow">' +
           sel1('d', 'cat', d.cat, uniqueCats().map(function (x) { return { v: x, l: x }; }), 'Hạng mục') +
           sel1('d', 'fol', d.fol, ['Dưới 50K', '50K – 100K', '100K – 300K', 'Trên 300K'].map(function (x) { return { v: x, l: x }; }), 'Follower') +
-          sel1('d', 'gmv', d.gmv, [{ v: '50000000', l: 'Trên 50tr' }, { v: '100000000', l: 'Trên 100tr' }, { v: '500000000', l: 'Trên 500tr' }], 'GMV 30 ngày') +
+          sel1('d', 'gmv', d.gmv, [{ v: '50000000', l: 'Trên ' + S.amt(5e7) }, { v: '100000000', l: 'Trên ' + S.amt(1e8) }, { v: '500000000', l: 'Trên ' + S.amt(5e8) }], 'GMV 30 ngày') +
           sel1('d', 'rate', d.rate, [{ v: '40', l: 'Từ 40%' }, { v: '60', l: 'Từ 60%' }, { v: '75', l: 'Từ 75%' }], 'Tỉ lệ đăng') +
           sel1('d', 'type', d.type, [{ v: 'Video', l: 'Video' }, { v: 'LIVE', l: 'LIVE' }], 'Nội dung') +
           sel1('d', 'country', d.country, ['Việt Nam', 'Thái Lan', 'Malaysia'].map(function (x) { return { v: x, l: x }; }), 'Quốc gia') +
-          sel1('d', 'tag', d.tag, db.tags.map(function (t) { return { v: t.name, l: t.name }; }), 'Nhãn') +
+          sel1('d', 'tag', d.tag, db.tags.map(function (t) { return { v: t.name, l: t.name }; }), 'Tag') +
           sel1('d', 'rel', d.rel, ['Mới', 'Đã mời', 'Đã chấp nhận', 'Đang hợp tác', 'Ngừng'].map(function (x) { return { v: x, l: x }; }), 'Quan hệ') +
           sel1('d', 'contact', d.contact, [{ v: 'Có liên hệ', l: 'Có liên hệ' }, { v: 'Chưa có liên hệ', l: 'Chưa có liên hệ' }], 'Liên hệ') +
         '</div></div>';
@@ -581,7 +581,7 @@
               return U.creatorCell(c, c.risingStar ? 'Ngôi sao sáng tạo' : ''); } },
             { k: 'cat', t: 'Hạng mục', r: function (c) {
               return '<div><div>' + U.esc(c.cat) + '</div><div class="gm-help">' + U.esc(TT.catL1Name(c.cat2)) + '</div></div>'; } },
-            { k: 'followers', t: 'Follower', cls: 'num', r: function (c) { return S.money(c.followers); } },
+            { k: 'followers', t: 'Follower', cls: 'num', r: function (c) { return S.short(c.followers); } },
             { k: 'gmv30', t: 'GMV 30 ngày', cls: 'num', r: function (c) { return S.money(c.gmv30); } },
             { k: 'unitsSold', t: 'Đã bán', cls: 'num', r: function (c) { return S.num(c.unitsSold); } },
             { k: '', t: 'Hoa hồng TB', cls: 'num', r: function (c) { return c.avgCommission + '%'; } },
@@ -702,8 +702,10 @@
     var w = c.v.wz, shopId = c.shop.id, db = S.data;
     var ids = Object.keys(w.sel).filter(function (k) { return w.sel[k]; });
     var per = Math.max(1, Math.min(PER, parseInt(w.perCampaign, 10) || PER));
-    var q = S.quota(shopId);
-    if (status === 'Đang chạy' && ids.length > q.left) ids = ids.slice(0, q.left);
+    /* hạn mức gói theo tổng tài khoản: lời mời hoặc tin nhắn tùy loại đợt */
+    var kindQ = w.kind === 'message' ? 'msgs' : 'invites';
+    var roomQ = window.PLANS.room(kindQ, shopId);
+    if (status === 'Đang chạy' && ids.length > roomQ) ids = ids.slice(0, roomQ);
 
     var groups = [];
     for (var i = 0; i < ids.length; i += per) groups.push(ids.slice(i, i + per));
@@ -750,10 +752,7 @@
       }
     });
 
-    if (status === 'Đang chạy') {
-      var sh = S.shop(shopId);
-      sh.used = Math.min(q.cap, sh.used + ids.length);
-    }
+    if (status === 'Đang chạy') window.PLANS.take(kindQ, shopId, ids.length, true);
 
     S.log((w.kind === 'invite' ? 'Tạo lời mời hợp tác' : 'Tạo đợt nhắn tin') + ' “' + baseName + '” · ' +
       S.num(ids.length) + ' Creator từ ' + srcName + ' · chia ' + groups.length + ' chiến dịch', 'Chiến dịch', shopId);

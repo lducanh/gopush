@@ -51,9 +51,16 @@
   }
   /* phạm vi dữ liệu của trang đang mở: 'all' chỉ khi trang gộp được */
   function scopeOf(page) { return state.all && page.scope === 'multi' ? 'all' : state.shop; }
-  function label(o) { return state.lang === 'en' ? o.en : o.vi; }
-  function desc(o) { return state.lang === 'en' ? o.den : o.dvi; }
-  function t(key) { return D.T[key][state.lang]; }
+  /* tiếng Việt và tiếng Anh có sẵn trong sitemap; ngôn ngữ khác tra I18N, thiếu thì dùng tiếng Anh */
+  var I = window.I18N;
+  function label(o) { return I.nav(o.vi, o.en, state.lang); }
+  /* tiếng Anh có mô tả viết tay; ngôn ngữ khác lấy câu gốc để từ điển (assets/i18n) dịch */
+  function desc(o) { return state.lang === 'en' ? (o.den || o.dvi) : o.dvi; }
+  var titleSrc = '';
+  function setTitle(s) { titleSrc = s; document.title = 'GOPUSH — ' + I.tr(s); }
+  function t(key) { var o = D.T[key], l = state.lang; if (o[l]) return o[l]; var x = I.t(key, l); return x !== key ? x : (l === 'en' ? o.en : o.vi); }
+  S.setLang(state.lang);
+  document.documentElement.lang = state.lang; I.use(state.lang);
   function currentPath() { return location.hash.replace(/^#/, '').split('?')[0] || '/'; }
   function query() { var q = location.hash.split('?')[1] || ''; return q; }
 
@@ -71,16 +78,17 @@
   }
 
   var cur = null;   /* { module, page, ctx } của trang đang mở */
+  var lastHash = '';   /* địa chỉ trang trong app vẽ thành công gần nhất, để quay về khi bị chặn */
 
   /* --------------------------------------------------------- shell */
   /* Topbar gọn tối đa: logo · phạm vi shop (kèm hạn mức) · ô Tìm hoặc hỏi AI · avatar.
      Ngôn ngữ, giao diện, trợ giúp nằm trong menu avatar; việc tồn báo trên sidebar. */
   function quotaLine() {
-    var used = 0, capAll = 0;
-    (state.all ? S.data.shops : [S.shop(state.shop)]).forEach(function (x) { var q = S.quota(x.id); used += q.used; capAll += q.cap; });
-    var pct = capAll ? Math.min(100, Math.round(used / capAll * 100)) : 0;
-    return '<span class="qt' + (pct >= 80 ? ' is-high' : '') + '"><span class="gm-num">' + S.num(used) + '/' + S.num(capAll) +
-      '</span> lời mời hôm nay<span class="track"><i style="width:' + pct + '%"></i></span></span>';
+    /* hạn mức gói tính trên tổng tài khoản (mọi shop) */
+    var a = window.PLANS.acct('invites'), unl = a.limit === Infinity;
+    var pct = unl ? 0 : (a.limit ? Math.min(100, Math.round(a.used / a.limit * 100)) : 100);
+    return '<span class="qt' + (pct >= 80 ? ' is-high' : '') + '" title="Tổng lời mời hôm nay của mọi shop trong tài khoản"><span class="gm-num">' + S.num(a.used) + '/' + (unl ? '∞' : S.num(a.limit)) +
+      '</span> ' + I.t('quota', state.lang) + '<span class="track"><i style="width:' + pct + '%"></i></span></span>';
   }
 
   function openCount() { return P.inboxItems(state.all ? 'all' : state.shop).filter(function (x) { return !x.done; }).length; }
@@ -96,6 +104,69 @@
       '<div class="sep"></div><button data-go="/inbox">' + ic('inbox') + 'Xem tất cả việc</button>');
     el.style.width = '340px';
     el.style.left = Math.max(8, Math.min(anchor.getBoundingClientRect().right - 340, window.innerWidth - 348)) + 'px';
+  }
+
+  /* nhãn gói ngay dưới avatar: khách thấy mình đang ở gói nào; admin hệ thống hiện "Admin" */
+  var PLAN_SHORT = { none: 'Chưa có gói', trial: 'Dùng thử', basic: 'Cơ bản', pro: 'Chuyên nghiệp', premium: 'Cao cấp' };
+  function planTag(big) {
+    if (window.AUTH && window.AUTH.isAdmin()) return '<span class="ig-plantag p-admin' + (big ? ' is-big' : '') + '">Admin</span>';
+    var p = window.PLANS && window.PLANS.current();
+    if (!p) return '';
+    return '<span class="ig-plantag p-' + p.id + (big ? ' is-big' : '') + '" title="' + U.attr(p.name) + '">' +
+      (big ? U.esc(p.name) : PLAN_SHORT[p.id]) + '</span>';
+  }
+
+  /* thị trường (site) và ngôn ngữ: hai nút gọn trên thanh trên */
+  function marketBtn() {
+    var m = S.market();
+    return '<button class="ig-pill ig-mkt" id="market-btn" title="' + U.attr(I.t('market', state.lang)) + '">' +
+      '<span class="fl">' + m.flag + '</span><b>' + m.code + '</b>' + ic('down') + '</button>';
+  }
+  function langBtn() {
+    var l = I.LANGS.filter(function (x) { return x.v === state.lang; })[0] || I.LANGS[0];
+    return '<button class="ig-pill ig-mkt" id="lang-btn" title="' + U.attr(I.t('language', state.lang)) + '">' + ic('globe') + '<b>' + l.s + '</b>' + ic('down') + '</button>';
+  }
+  function marketMenu(anchor) {
+    var cur = S.market().code, zones = ['sea', 'am', 'ea'];
+    var el = openMenu(anchor, '<div class="h">' + U.esc(I.t('market', state.lang)) + ' · TikTok Shop</div>' + zones.map(function (z) {
+      return '<div class="h ig-mkt-zone">' + U.esc(I.t('zone_' + z, state.lang)) + '</div>' +
+        window.MARKETS.list.filter(function (m) { return m.zone === z; }).map(function (m) {
+          return '<button data-market="' + m.code + '"><span class="ig-mkt-fl">' + m.flag + '</span><span style="flex:1">' +
+            U.esc(state.lang !== 'en' ? m.name : m.en) + '</span><span class="gm-help">' + m.iso + '</span>' + (m.code === cur ? ic('check') : '<span style="width:16px"></span>') + '</button>';
+        }).join('');
+    }).join(''));
+    el.style.minWidth = '260px';
+  }
+  function langMenu(anchor) {
+    openMenu(anchor, '<div class="h">' + U.esc(I.t('language', state.lang)) + '</div>' + I.LANGS.map(function (l) {
+      return '<button data-lang="' + l.v + '"><span class="ig-mkt-code">' + l.s + '</span><span style="flex:1">' + U.esc(l.l) + '</span>' +
+        (l.v === state.lang ? ic('check') : '') + '</button>';
+    }).join('') + (state.lang !== 'vi' ? '<div class="h ig-mkt-note">' + U.esc(I.t('langNote', state.lang)) + '</div>' : ''));
+  }
+  /* đổi site: nạp kho dữ liệu của thị trường mới rồi về Trang chủ */
+  function setMarket(code, silent) {
+    if (code === S.market().code) return;
+    S.useMarket(code); VIEW = {};
+    state.shop = S.data.shops[0].id; state.all = false;
+    store.set('gopush.shop', state.shop); store.set('gopush.all', '0');
+    if (window.AUTH && window.AUTH.user()) syncProfile(window.AUTH.user());
+    /* đổi thị trường thì đổi luôn ngôn ngữ theo thị trường đó; vẫn chọn lại ngôn ngữ khác được */
+    if (!silent && S.market().lang && S.market().lang !== state.lang) setLang(S.market().lang, true);
+    if (!silent) { var m = S.market(); toast(I.t('switchMarket', state.lang) + ' ' + m.flag + ' ' + (state.lang !== 'en' ? m.name : m.en)); }
+    if (!silent) { if (location.hash === '#/home') render(); else location.hash = '#/home'; }
+  }
+  /* tài khoản đăng nhập là chủ dữ liệu đang xem: tên, email hiện ở hồ sơ và menu */
+  function syncProfile(u) {
+    var pr = S.data.settings.profile;
+    /* tài khoản demo có gói gắn sẵn; tài khoản mới đăng ký bắt đầu bằng gói dùng thử */
+    if (window.PLANS) window.PLANS.current();   /* nạp gói của tài khoản vào kho đang mở */
+    var b = S.data.settings.billing;
+    if (u.plan && window.PLANS && b.ownerUid !== u.uid) { b.planId = u.plan; b.ownerUid = u.uid; S.save(); }
+    if (pr.name !== u.name || pr.email !== u.email) {
+      pr.name = u.name; pr.email = u.email;
+      if (S.data.members[0]) { S.data.members[0].name = u.name; S.data.members[0].email = u.email; }
+      S.save();
+    }
   }
 
   function topbar() {
@@ -115,12 +186,14 @@
         ic('chevronsDown', 'sw') + '</button>' +
       '<div class="gm-topbar__right">' +
         '<div class="ig-cmd" id="cmd">' + ic('search') +
-          '<input type="search" id="gsearch" autocomplete="off" placeholder="Tìm hoặc hỏi AI…">' +
+          '<input type="search" id="gsearch" autocomplete="off" placeholder="' + U.attr(I.t('searchAsk', state.lang)) + '">' +
           '<kbd>' + (mac ? '⌘' : 'Ctrl') + ' K</kbd>' +
           '<div class="ig-cmdpop" id="cmdpop" hidden></div></div>' +
+        marketBtn() + langBtn() +
         '<button class="gm-topbar__icon ig-aiicon' + (state.ai ? ' on' : '') + '" id="ai-btn" title="GOPUSH AI — hỏi về trang đang xem">' + ic('ai') + '</button>' +
         '<button class="gm-topbar__icon" id="notif-btn" title="Việc cần xử lý">' + ic('bell') + bellDot() + '</button>' +
-        '<button class="ig-avatarbtn" id="user-btn" aria-label="Tài khoản và tùy chỉnh">' + U.bear() + ic('down') + '</button>' +
+        '<button class="ig-avatarbtn" id="user-btn" aria-label="Tài khoản và tùy chỉnh">' +
+          '<span class="ig-av">' + U.bear() + planTag() + '</span>' + ic('down') + '</button>' +
       '</div>' +
     '</header>';
   }
@@ -133,7 +206,7 @@
     var out = [], fq = fold(q.trim()), sid = state.shop;
     function item(group, icon, title, sub, run) { out.push({ g: group, i: icon, t: title, s: sub || '', run: run }); }
     if (!fq) {
-      item('Gợi ý', 'ai', 'Hỏi GOPUSH AI về trang đang xem', cur ? label(cur.page) : '', 'aiopen');
+      if (aiOk()) item('Gợi ý', 'ai', 'Hỏi GOPUSH AI về trang đang xem', cur ? label(cur.page) : '', 'aiopen');
       var n = P.inboxItems(state.all ? 'all' : sid).filter(function (x) { return !x.done; }).length;
       item('Gợi ý', 'inbox', 'Việc cần xử lý', n + ' việc đang chờ', 'go:/inbox');
       item('Gợi ý', 'send', 'Tạo lời mời hàng loạt', 'Mở wizard 4 bước', 'do:campaign:new:invite');
@@ -141,21 +214,22 @@
       return out;
     }
     S.data.creators.filter(function (c) { return fold(c.name + ' ' + c.user).indexOf(fq) > -1; }).slice(0, 5).forEach(function (c) {
-      item('Creator', 'user', c.name, '@' + c.user + ' · ' + S.money(c.followers) + ' follower · ' + c.cat, 'do:creator:' + c.id);
+      item('Creator', 'user', c.name, '@' + c.user + ' · ' + S.short(c.followers) + ' follower · ' + c.cat, 'do:creator:' + c.id);
     });
     S.data.campaigns.filter(function (c) { return fold(c.name).indexOf(fq) > -1; }).slice(0, 4).forEach(function (c) {
       item('Chiến dịch', c.kind === 'message' ? 'msgSend' : 'send', c.name, S.shop(c.shopId).name + ' · ' + c.status,
         'go:/s/' + c.shopId + '/campaigns/c/' + c.id);
     });
-    ROUTES.filter(function (r) { return !r.page.hidden && fold(label(r.page) + ' ' + label(r.module)).indexOf(fq) > -1; })
+    ROUTES.filter(function (r) { return !r.page.hidden && (!r.page.adminOnly || window.AUTH.isAdmin()) && fold(label(r.page) + ' ' + label(r.module)).indexOf(fq) > -1; })
       .slice(0, 4).forEach(function (r) {
-        item('Trang', r.page.ic || 'file', label(r.page), label(r.module), 'go:' + href(r.page).slice(1));
+        item('Trang', canOpen(r.page) ? (r.page.ic || 'file') : 'lock', label(r.page), label(r.module) + (canOpen(r.page) ? '' : ' · chưa mở với tài khoản này'), 'go:' + href(r.page).slice(1));
       });
     item('Tìm thêm', 'search', 'Tìm “' + q.trim() + '” trong Tìm Creator', 'Lọc toàn bộ Creator của TikTok Shop', 'find:' + q.trim());
-    item('GOPUSH AI', 'ai', 'Hỏi GOPUSH AI: “' + q.trim() + '”', 'Trả lời bằng dữ liệu của ' + (state.all ? 'mọi shop' : S.shop(sid).name), 'ai:' + q.trim());
+    if (aiOk()) item('GOPUSH AI', 'ai', 'Hỏi GOPUSH AI: “' + q.trim() + '”', 'Trả lời bằng dữ liệu của ' + (state.all ? 'mọi shop' : S.shop(sid).name), 'ai:' + q.trim());
     return out;
   }
 
+  function aiOk() { return window.AUTH.linked() && window.PLANS.has('ai'); }
   function cmdRender(q) {
     var pop = document.getElementById('cmdpop');
     if (!pop) return;
@@ -228,7 +302,18 @@
       return '<div class="gm-nav-label">' + U.esc(title) + '</div>' +
         D.MODULES.filter(function (m) { return m.group === g; }).map(function (m) {
           var cur = m.id === activeModule.id;
-          var vis = m.pages.filter(function (p) { return !p.hidden; });
+          var adm = window.AUTH && window.AUTH.isAdmin();
+          var vis = m.pages.filter(function (p) { return !p.hidden && (!p.adminOnly || adm); });
+          /* module flat: mỗi trang là một dòng có icon, nằm thẳng dưới nhãn nhóm */
+          if (m.flat) {
+            return vis.map(function (p) {
+              var on = p.id === activeId, b = badgeFor(p);
+              return '<a class="gm-nav-item' + (on ? ' is-current is-active' : '') + '" href="' + href(p) +
+                '" title="' + U.attr(label(p)) + '">' + ic(p.ic) + '<span class="tx">' + U.esc(label(p)) + '</span>' +
+                (!canOpen(p) ? '<span class="ig-navlock" title="Chưa mở với tài khoản này">' + ic('lock') + '</span>'
+                  : (b ? '<span class="gm-badge">' + b + '</span>' : '')) + '</a>';
+            }).join('');
+          }
           if (vis.length < 2) {
             return '<a class="gm-nav-item' + (cur ? ' is-current is-active' : '') + '" href="' + href(vis[0]) +
               '" title="' + U.attr(label(m)) + '">' + ic(m.icon) + '<span class="tx">' + U.esc(label(m)) + '</span></a>';
@@ -246,20 +331,22 @@
               var b = badgeFor(p);
               return '<a class="gm-nav-item gm-nav-sub' + (p.id === activeId ? ' is-active' : '') + '" href="' + href(p) + '">' +
                 '<span class="tx">' + U.esc(label(p)) + '</span>' +
-                (b ? '<span class="gm-badge' + (p.id === 'inbox' ? ' is-alert' : '') + '">' + b + '</span>' : '') + '</a>';
+                (!canOpen(p) ? '<span class="ig-navlock" title="Chưa mở với tài khoản này">' + ic('lock') + '</span>'
+                  : (b ? '<span class="gm-badge' + (p.id === 'inbox' ? ' is-alert' : '') + '">' + b + '</span>' : '')) + '</a>';
             }).join('') + '</div></div></div>';
         }).join('');
     }
     return '<nav class="gm-sidebar ig-side" id="subnav" aria-label="Điều hướng">' +
-      group('biz', state.lang === 'en' ? 'Operations' : 'Nghiệp vụ') +
-      group('admin', state.lang === 'en' ? 'Administration' : 'Quản trị') + '</nav>';
+      group('biz', I.nav('Nghiệp vụ', 'Operations', state.lang)) +
+      group('ai', 'GOPUSH AI') +
+      group('admin', I.nav('Quản trị', 'Administration', state.lang)) + '</nav>';
   }
 
   function support() {
     var rows = [
-      ['phone', 0, 'Gọi hỗ trợ', '0901 234 567 · 8h – 22h', 'tel:+84901234567'],
-      ['chat', 1, 'Zalo OA', 'Trả lời trong 15 phút', 'https://zalo.me/gopush'],
-      ['mail', 3, 'Email', 'support@gomax.vn', 'mailto:support@gomax.vn']
+      ['phone', 0, 'Gọi hỗ trợ', '0867.888.582 · 8h – 22h', 'tel:+84867888582'],
+      ['chat', 1, 'Zalo', '0867.888.582 · trả lời trong 15 phút', 'https://zalo.me/0867888582'],
+      ['mail', 3, 'Email', 'contact@gopush.asia', 'mailto:contact@gopush.asia']
     ];
     var TONE = [['var(--soft-sky)', 'var(--soft-sky-ink)'], ['var(--soft-sage)', 'var(--soft-sage-ink)'],
       ['var(--soft-sand)', 'var(--soft-sand-ink)'], ['var(--soft-lilac)', 'var(--soft-lilac-ink)']];
@@ -319,26 +406,48 @@
       location.hash = '#' + hit.alias.split('?')[0]; return;
     }
 
+    var me = window.AUTH.user();
     if (hit.pub) {
+      /* đã đăng nhập thì không ở lại trang đăng nhập / đăng ký */
+      if (me && /^(login|signup|forgot)$/.test(hit.pub.id)) { location.hash = '#/home'; return; }
       cur = null;
-      document.title = 'GOPUSH — ' + label(hit.pub);
+      setTitle(label(hit.pub));
       document.body.innerHTML = P[hit.pub.id]({ lang: state.lang }) + support();
       window.scrollTo(0, 0);
       return;
     }
 
+    /* trang trong app cần đăng nhập */
+    if (!me) { location.hash = '#/login?next=' + encodeURIComponent(path); return; }
+    /* mỗi tài khoản một kho dữ liệu riêng */
+    if (S.useUser(me.uid)) {
+      VIEW = {};
+      if (!S.data.shops.some(function (s) { return s.id === state.shop; })) { state.shop = S.data.shops[0].id; store.set('gopush.shop', state.shop); }
+      if (hit.shop && hit.shop !== 'all' && !S.data.shops.some(function (s) { return s.id === hit.shop; })) { location.hash = '#/home'; return; }
+    }
+    syncProfile(me);
     var m = hit.route.module, p = hit.route.page;
+    /* trang chỉ dành cho admin hệ thống */
+    /* không đủ quyền: giữ nguyên trang đang xem (hoặc về Trang chủ) và hiện popup */
+    if (!canOpen(p)) {
+      var showDeny = function () { denyFor(p.feature, p); };
+      /* luôn đưa về Trang chủ rồi mới hiện popup: tắt popup cũng không ở lại trang bị khóa */
+      location.replace('#/home'); setTimeout(showDeny, 80);
+      return;
+    }
+    var ann = window.ANN ? window.ANN.bar() : '';
     /* shop trong URL quyết định phạm vi: /s/all/… = Tất cả, /s/{id}/… = shop đó */
     if (hit.shop === 'all') { if (!state.all) { state.all = true; store.set('gopush.all', '1'); } }
     else if (hit.shop && S.shop(hit.shop).id === hit.shop) {
       state.shop = hit.shop; store.set('gopush.shop', hit.shop);
       if (state.all) { state.all = false; store.set('gopush.all', '0'); }
     }
-    document.title = 'GOPUSH — ' + label(p);
+    setTitle(label(p));
     cur = { module: m, page: p, id: hit.id };
+    lastHash = location.hash;
 
     document.body.innerHTML =
-      '<div class="ig-app' + (state.sub === 'collapsed' ? ' sub-collapsed' : '') + (state.ai ? ' ai-open' : '') + '">' + topbar() +
+      '<div class="ig-app' + (state.sub === 'collapsed' ? ' sub-collapsed' : '') + (state.ai ? ' ai-open' : '') + (ann ? ' has-ann' : '') + '">' + topbar() + ann +
         '<div class="ig-body">' + sidebar(m, p) +
           '<button class="ig-collapse" id="sub-btn" aria-controls="subnav" aria-expanded="' + (state.sub === 'open') +
             '" title="' + U.attr(t(state.sub === 'open' ? 'collapse' : 'expand')) + '">' + ic('left') + '</button>' +
@@ -346,6 +455,7 @@
           (state.ai ? P.aiPanel(aiCtx()) : '') +
         '</div></div>' + support() + '<div id="layer"></div>';
     sheet(document.getElementById('view'));
+    if (window.LINK) window.LINK.onLogin(me);
   }
 
   /* Bố cục GoMax Console: tiêu đề trang nằm ngoài card, mọi khối phía dưới
@@ -395,7 +505,26 @@
     if (neu) old.replaceWith(neu);
   }
 
-  window.APP = { refresh: refresh, vz: function () { return ctxFor(cur.page); } };
+  window.APP = { refresh: refresh, vz: function () { return ctxFor(cur.page); },
+    /* trạng thái lọc của một trang bất kỳ, để trang khác mở sẵn bộ lọc */
+    view: function (id) { return vs(id); },
+    lang: function () { return state.lang; },
+    canOpenPath: function (path) { var h = match(path.split('?')[0]); return !h || !h.route || canOpen(h.route.page); },
+    render: function () { render(); },
+    modal: function (html) { openModal(html); },
+    closeModal: function () { closeLayer(); },
+    toast: function (m) { toast(m); },
+    setLang: function (l) { setLang(l); }, title: function () { if (titleSrc) setTitle(titleSrc); },
+    setMarket: function (c, silent) { setMarket(c, silent); },
+    onLogin: function (u) { syncProfile(u); },
+    afterLink: function () {
+      S.reset(); VIEW = {};
+      state.shop = S.data.shops[0].id; state.all = false; store.set('gopush.shop', state.shop);
+      syncProfile(window.AUTH.user());
+      toast('Đã liên kết gian hàng ' + S.data.shops[0].name + ' · đang đồng bộ dữ liệu');
+      if (location.hash === '#/home') render(); else location.hash = '#/home';
+    },
+    confirm: function (title, text, ok, fn) { confirmBox(title, text, ok, function () { closeLayer(); fn(); }); } };
 
   /* --------------------------------------------------------- lớp nổi */
   function layer() { return document.getElementById('layer'); }
@@ -537,6 +666,13 @@
   }
   var MODAL_OK = null;
 
+  /* vượt hạn mức gói: báo rõ đang dùng bao nhiêu và mời nâng gói */
+  function overLimit(kind) {
+    if (window.PLANS.check(kind).ok) return false;
+    window.PLANS.denyLimit(kind);
+    return true;
+  }
+
   function confirmBox(title, text, okLabel, onOk) {
     openModal(U.modal({
       title: title,
@@ -566,11 +702,11 @@
           '<b>' + U.esc(x.title) + '</b>' +
           '<span class="when">Thời gian phát hành: ' + S.ts(x.publishedAt).replace(' (UTC+7)', '') + '</span>' +
           '<div class="ms">' +
-            '<span title="Lượt xem">' + ic('eye') + S.money(x.views) + '</span>' +
-            '<span title="Lượt thích">' + ic('thumbUp') + S.money(x.likes) + '</span>' +
+            '<span title="Lượt xem">' + ic('eye') + S.short(x.views) + '</span>' +
+            '<span title="Lượt thích">' + ic('thumbUp') + S.short(x.likes) + '</span>' +
             '<span title="Bình luận">' + ic('chat') + S.num(x.comments) + '</span>' +
             '<span title="Đơn hàng phát sinh từ nội dung này">' + ic('box') + S.num(x.orders) + ' đơn</span>' +
-            (x.gmv ? '<span title="GMV từ nội dung này">' + ic('wallet') + S.money(x.gmv) + ' ₫</span>' : '') +
+            (x.gmv ? '<span title="GMV từ nội dung này">' + ic('wallet') + S.amt(x.gmv) + '</span>' : '') +
           '</div>' +
           '<a class="gm-btn gm-btn-sm" href="' + U.attr(x.url) + '" target="_blank" rel="noopener">' +
             ic('tiktok', 'solid') + (x.type === 'LIVE' ? 'Xem LIVE trên TikTok' : 'Xem video trên TikTok') + '</a>' +
@@ -677,7 +813,7 @@
         '<span class="gm-check' + (on ? ' on' : '') + '"></span>' +
         '<span class="th">' + ic('box') + '</span>' +
         '<span class="t"><b>' + U.esc(p.name) + '</b>' +
-        '<span class="gm-help">' + U.esc(p.sku) + ' · ' + S.num(p.price) + ' ' + sh.cur +
+        '<span class="gm-help">' + U.esc(p.sku) + ' · ' + S.vnd(p.price) +
         ' · hoa hồng ' + p.com + '%</span></span>' +
         (p.active ? '' : '<span class="gm-tag gm-tag-red">Ngừng bán</span>') + '</label>';
     }).join('') + '</div>'
@@ -702,10 +838,10 @@
     var db = S.data, sid = shopId(), cols, rows, name;
     if (what === 'creators') {
       name = 'creators';
-      cols = ['Tên', 'Username', 'Kênh TikTok', 'Ngành hàng', 'Quốc gia', 'Follower', 'GMV 30 ngày', 'GPM', 'Tỉ lệ đăng', 'Quan hệ', 'Nhãn'];
+      cols = ['Tên', 'Username', 'Kênh TikTok', 'Ngành hàng', 'Quốc gia', 'Follower', 'GMV 30 ngày (' + S.market().iso + ')', 'GPM (' + S.market().iso + ')', 'Tỉ lệ đăng', 'Quan hệ', 'Tag'];
       rows = db.creators.filter(function (c) { return S.rel(c, sid).saved || true; }).map(function (c) {
         var r = S.rel(c, sid);
-        return [c.name, '@' + c.user, c.tiktok, c.cat, c.country, c.followers, c.gmv30, c.gpm, c.postRate + '%', r.state,
+        return [c.name, '@' + c.user, c.tiktok, c.cat, c.country, c.followers, Math.round(S.fx(c.gmv30)), Math.round(S.fx(c.gpm)), c.postRate + '%', r.state,
           r.tags.map(function (t) { var x = S.tag(t); return x ? x.name : ''; }).join(', ')];
       });
     } else if (what === 'samples' || what === 'shipments') {
@@ -734,30 +870,68 @@
       rows = db.audit.map(function (a) { return [a.at, a.who, a.kind, a.act, a.shop]; });
     } else if (what === 'shops' || what === 'report' || what === 'dashboard') {
       name = 'bao-cao-cua-hang';
-      cols = ['Cửa hàng', 'GMV', 'Đơn', 'Hoa hồng', 'Video/live', 'Creator hoạt động'];
+      cols = ['Cửa hàng', 'GMV (' + S.market().iso + ')', 'Đơn', 'Hoa hồng (' + S.market().iso + ')', 'Video/live', 'Creator hoạt động'];
       rows = db.shops.map(function (s) {
         var st = S.stats(s.id);
-        return [s.name, st.gmv, st.orders, st.com, st.videos, st.working];
+        return [s.name, Math.round(S.fx(st.gmv)), st.orders, Math.round(S.fx(st.com)), st.videos, st.working];
       });
     } else {
       name = 'du-lieu';
-      cols = ['Creator', 'GMV 30 ngày', 'Tỉ lệ đăng', 'Ngành hàng'];
+      cols = ['Creator', 'GMV 30 ngày (' + S.market().iso + ')', 'Tỉ lệ đăng', 'Ngành hàng'];
       rows = db.creators.filter(function (c) { return S.rel(c, sid).state === 'Đang hợp tác'; })
         .sort(function (a, b) { return b.gmv30 - a.gmv30; }).slice(0, 50)
-        .map(function (c) { return [c.name, c.gmv30, c.postRate + '%', c.cat]; });
+        .map(function (c) { return [c.name, Math.round(S.fx(c.gmv30)), c.postRate + '%', c.cat]; });
     }
     S.download('gopush-' + name + '-' + S.fmtDate(new Date()).replace(/\//g, '') + '.csv', S.toCSV(cols, rows));
     toast('Đã tải xuống ' + rows.length + ' dòng');
   }
 
   /* --------------------------------------------------------- bộ xử lý thao tác */
+  /* về Trang chủ rồi hiện popup không đủ quyền (theo tính năng, hoặc chưa có gói) */
+  /* Cơ cấu quyền, theo thứ tự: 1) liên kết gian hàng  2) gói  3) vai trò (admin hệ thống).
+     canOpen: trang mở được không; denyFor: hiện đúng popup của lớp đang chặn. */
+  var LINK_OPEN = ['home', 'shop-list', 'shop-detail', 'billing', 'profile'];
+  function linkOk(p) { return window.AUTH.linked() || LINK_OPEN.indexOf(p.navAs || p.id) > -1; }
+  function canOpen(p) { return linkOk(p) && window.PLANS.allowPage(p) && (!p.adminOnly || window.AUTH.isAdmin()); }
+  function denyFor(feature, p) {
+    if (!window.AUTH.linked()) return window.LINK.needed();
+    if (p && p.adminOnly && !window.AUTH.isAdmin()) return window.PLANS.notice('Trang dành cho quản trị', 'Trang <b>' + U.esc(label(p)) + '</b> chỉ dành cho admin hệ thống GOPUSH. Tài khoản của bạn không cần trang này để sử dụng các tính năng theo gói.', 'shield');
+    if (window.PLANS.isNone() || !feature) return window.PLANS.denyNone();
+    window.PLANS.denyFeature(feature);
+  }
+  function denyHome(feature) {
+    closeLayer();
+    var show = function () { denyFor(feature); };
+    if (location.hash !== '#/home') { location.hash = '#/home'; setTimeout(show, 80); } else show();
+  }
+
+  /* tài khoản chưa có gói: chỉ được chuyển trang, đóng hộp thoại, sửa hồ sơ; còn lại hiện popup */
+  var NONE_OK = ['go', 'modal', 'set', 'save', 'invoice', 'toast'];
   function dispatch(act, el) {
     var db = S.data, sid = shopId(), a = act.split(':'), verb = a[0], arg = a[1], arg2 = a.slice(2).join(':');
     var view = v();
+    if (!window.AUTH.linked() && NONE_OK.indexOf(verb) < 0) {
+      if (verb === 'shop' || verb === 'sync') { window.LINK.guide(); return true; }
+      denyHome(); return true;
+    }
+    if (window.PLANS.isNone() && NONE_OK.indexOf(verb) < 0) { denyHome(); return true; }
+    /* thao tác thuộc tính năng gói không có: popup + về Trang chủ */
+    var need = { tag: 'segments', tagpick: 'segments', untag: 'segments', auto: 'auto', autoMsg: 'auto', ai: 'ai', ask: 'ai' }[verb] ||
+      (verb === 'bulk' && arg === 'tag' ? 'segments' : '') || (verb === 'crx' && arg === 'seg' ? 'segments' : '') || (verb === 'crx' && arg === 'tag' ? 'segments' : '');
+    /* aix: dùng chung cho bộ chọn ở nhiều trang; chỉ chặn khi đang ở trang AI */
+    if (verb === 'aix' && cur && /^(ai|report)$/.test(cur.page.feature || '')) need = cur.page.feature;
+    if (need && !window.PLANS.has(need)) { denyHome(need); return true; }
 
     switch (verb) {
       case 'go': location.hash = '#' + act.slice(3); return true;
       case 'toast': toast(act.slice(6)); return true;
+      /* sao chép nội dung một câu trả lời AI */
+      case 'copymsg': {
+        var mb = el && el.closest('.ig-msg'), tx = '';
+        if (mb) { var cl = mb.querySelector('.body').cloneNode(true); var ac = cl.querySelector('.ig-msg-actions'); if (ac) ac.remove(); tx = cl.innerText.trim(); }
+        try { if (navigator.clipboard && tx) navigator.clipboard.writeText(tx); } catch (e) { /* bỏ qua */ }
+        toast('Đã sao chép nội dung'); return true;
+      }
 
       /* --- việc cần xử lý --- */
       case 'inbox': {
@@ -798,6 +972,7 @@
         return true;
 
       case 'save': {
+        if (arg === 'settings') { S.save(); toast('Đã lưu thay đổi'); return true; }
         var c1 = S.creator(arg); if (!c1) return true;
         var r1 = S.rel(c1, sid); r1.saved = !r1.saved;
         S.save(); toast(r1.saved ? 'Đã lưu ' + c1.name + ' vào Kho' : 'Đã bỏ khỏi Kho'); refresh();
@@ -806,9 +981,9 @@
       case 'invite': {
         var c2 = S.creator(arg); if (!c2) return true;
         if (S.isBlacklisted(c2.id, sid)) { toast('Creator đang trong blacklist, không gửi được'); return true; }
+        if (!window.PLANS.take('invites', sid, 1)) return true;
         var r2 = S.rel(c2, sid);
         r2.state = 'Đã mời'; r2.saved = true; r2.invitedAt = S.fmtDate(new Date());
-        var sh1 = S.shop(sid); sh1.used = Math.min(S.quota(sid).cap, sh1.used + 1);
         S.log('Gửi lời mời tới ' + c2.name, 'Chiến dịch', sid);
         S.save(); toast('Đã gửi lời mời tới ' + c2.name); refresh();
         return true;
@@ -824,7 +999,8 @@
           foot: U.btn('Hủy', { act: 'modal:close' }) + U.btn('Gửi', { variant: 'primary', icon: 'msgSend', act: 'modal:ok' })
         }));
         MODAL_OK = function () {
-          var sh = S.shop(sid); sh.used = Math.min(S.quota(sid).cap, sh.used + 1);
+          closeLayer();
+          if (!window.PLANS.take('msgs', sid, 1)) return;
           S.log('Gửi tin nhắn tới ' + c3.name, 'Chiến dịch', sid);
           S.save(); closeLayer(); toast('Đã gửi tin nhắn tới ' + c3.name); refresh();
         };
@@ -849,15 +1025,15 @@
           ids.forEach(function (id) { var c = S.creator(id); if (c) S.rel(c, sid).saved = (arg === 'save'); });
           toast(arg === 'save' ? 'Đã lưu ' + ids.length + ' Creator vào Kho' : 'Đã bỏ ' + ids.length + ' Creator khỏi Kho');
         } else if (arg === 'invite' || arg === 'inviteOne') {
-          var sent = 0;
-          ids.forEach(function (id) {
-            var c = S.creator(id); if (!c || S.isBlacklisted(id, sid)) return;
-            var r = S.rel(c, sid);
-            if (r.state === 'Mới') { r.state = 'Đã mời'; r.saved = true; r.invitedAt = S.fmtDate(new Date()); sent++; }
+          var todo = ids.filter(function (id) { var c = S.creator(id); return c && !S.isBlacklisted(id, sid) && S.rel(c, sid).state === 'Mới'; });
+          if (!todo.length) { toast('Những Creator này đã được mời trước đó'); clearSel(); refresh(); return true; }
+          var sent = window.PLANS.take('invites', sid, todo.length);
+          if (!sent) { clearSel(); refresh(); return true; }
+          todo.slice(0, sent).forEach(function (id) {
+            var r = S.rel(S.creator(id), sid); r.state = 'Đã mời'; r.saved = true; r.invitedAt = S.fmtDate(new Date());
           });
-          var sh2 = S.shop(sid); sh2.used = Math.min(S.quota(sid).cap, sh2.used + sent);
           S.log('Gửi ' + sent + ' lời mời hàng loạt', 'Chiến dịch', sid);
-          toast(sent ? 'Đã gửi ' + sent + ' lời mời' : 'Những Creator này đã được mời trước đó');
+          toast(sent < todo.length ? 'Đã gửi ' + sent + '/' + todo.length + ' lời mời · đã hết hạn mức hôm nay' : 'Đã gửi ' + sent + ' lời mời');
         } else if (arg === 'black') {
           ids.forEach(function (id) {
             if (S.isBlacklisted(id, sid)) return;
@@ -870,9 +1046,10 @@
           optionMenu(el, 'bulktag', db.tags.map(function (t2) { return { v: t2.id, l: t2.name }; }), null);
           return true;
         } else if (arg === 'message') {
-          var sh3 = S.shop(sid); sh3.used = Math.min(S.quota(sid).cap, sh3.used + ids.length);
-          S.log('Gửi ' + ids.length + ' tin nhắn hàng loạt', 'Chiến dịch', sid);
-          toast('Đã đưa ' + ids.length + ' tin nhắn vào hàng đợi gửi');
+          var nm = window.PLANS.take('msgs', sid, ids.length);
+          if (!nm) { clearSel(); refresh(); return true; }
+          S.log('Gửi ' + nm + ' tin nhắn hàng loạt', 'Chiến dịch', sid);
+          toast(nm < ids.length ? 'Đã đưa ' + nm + '/' + ids.length + ' tin nhắn vào hàng đợi · đã hết hạn mức hôm nay' : 'Đã đưa ' + nm + ' tin nhắn vào hàng đợi gửi');
         }
         clearSel(); S.save(); refresh(); closeLayer();
         return true;
@@ -929,27 +1106,27 @@
       /* --- nhãn --- */
       case 'tag':
         if (arg === 'new') {
-          askText('Tạo nhãn', 'Tên nhãn', '', function (n) {
+          askText('Tạo tag', 'Tên tag', '', function (n) {
             if (!n) return;
-            db.tags.push({ id: S.uid('t'), name: n, desc: 'Nhãn mới', by: USER() });
-            S.save(); closeLayer(); toast('Đã tạo nhãn “' + n + '”'); refresh();
+            db.tags.push({ id: S.uid('t'), name: n, desc: 'Tag mới', by: USER() });
+            S.save(); closeLayer(); toast('Đã tạo tag “' + n + '”'); refresh();
           });
         } else if (arg === 'edit') {
           var tg = S.tag(arg2);
-          askText('Sửa nhãn', 'Tên nhãn', tg ? tg.name : '', function (n) {
+          askText('Sửa tag', 'Tên tag', tg ? tg.name : '', function (n) {
             if (tg && n) { tg.name = n; S.save(); }
             closeLayer(); refresh();
           });
         } else if (arg === 'del') {
           var tg2 = S.tag(arg2);
-          confirmBox('Xóa nhãn', 'Xóa nhãn “' + (tg2 ? tg2.name : '') + '”? Creator đang gắn nhãn này sẽ bị gỡ nhãn.', 'Xóa', function () {
+          confirmBox('Xóa tag', 'Xóa tag “' + (tg2 ? tg2.name : '') + '”? Creator đang gắn tag này sẽ được gỡ tag.', 'Xóa', function () {
             db.tags = db.tags.filter(function (x) { return x.id !== arg2; });
             db.creators.forEach(function (c) {
               Object.keys(c.rel).forEach(function (k) {
                 c.rel[k].tags = c.rel[k].tags.filter(function (x) { return x !== arg2; });
               });
             });
-            S.save(); closeLayer(); toast('Đã xóa nhãn'); refresh();
+            S.save(); closeLayer(); toast('Đã xóa tag'); refresh();
           });
         }
         return true;
@@ -997,9 +1174,12 @@
           if (!cp) return true;
           if (arg === 'pause') { cp.status = 'Tạm dừng'; toast('Đã tạm dừng “' + cp.name + '”'); }
           else if (arg === 'run') {
-            cp.status = 'Đang chạy';
+            if (!window.PLANS.check('tasks', cp.shopId).ok) { window.PLANS.denyLimit('tasks', cp.shopId); return true; }
             if (!cp.total) cp.total = 100;
-            cp.sent = Math.min(cp.total, cp.sent + (parseInt(cp.perRun, 10) || 50));
+            var inc = Math.min(cp.total - cp.sent, parseInt(cp.perRun, 10) || 50);
+            if (inc > 0) { inc = window.PLANS.take(cp.kind === 'message' ? 'msgs' : 'invites', cp.shopId, inc); if (!inc) return true; }
+            cp.status = 'Đang chạy';
+            cp.sent = Math.min(cp.total, cp.sent + Math.max(0, inc));
             cp.accepted = Math.round(cp.sent * 0.36);
             toast('Đang chạy “' + cp.name + '”');
           } else if (arg === 'dup') {
@@ -1019,11 +1199,12 @@
             location.hash = '#/s/' + cp.shopId + '/campaigns/c/' + cp.id;
             return true;
           } else if (arg === 'refill') {
+            if (cp.status === 'Hoàn thành' && !window.PLANS.check('tasks', cp.shopId).ok) { window.PLANS.denyLimit('tasks', cp.shopId); return true; }
             cp.total += 50; if (cp.status === 'Hoàn thành') cp.status = 'Đang chạy';
             toast('Đã bù thêm 50 Creator khớp bộ lọc vào “' + cp.name + '”');
           } else if (arg === 'extend') {
             cp.endDays = (cp.endDays || 0) + 14;
-            var ed = new Date(2026, 8, 24); ed.setDate(ed.getDate() + cp.endDays); cp.end = S.fmtDate(ed);
+            var ed = S.today(); ed.setDate(ed.getDate() + cp.endDays); cp.end = S.fmtDate(ed);
             toast('Đã gia hạn tới ' + cp.end);
           }
           S.log('Cập nhật chiến dịch “' + cp.name + '”', 'Chiến dịch', sid);
@@ -1297,11 +1478,13 @@
           var list6 = picked();
           if (!list6.length) { toast('Không có yêu cầu mẫu nào để gửi'); return true; }
           var still = list6.filter(function (x) { return x.status === 'PENDING'; });
+          var nmk = window.PLANS.take('msgs', sid, still.length);
+          if (still.length && !nmk) { closeLayer(); return true; }
+          still = still.slice(0, nmk);
           toast('Đang gửi tin nhắn mẫu…');
           setTimeout(function () {
             still.forEach(function (x) { x.msgSentAt = Math.floor(Date.now() / 1000); });
             S.log('Gửi tin nhắn mẫu cho ' + still.length + ' Creator', 'Hàng mẫu', sid);
-            var sh7 = S.shop(sid); sh7.used = Math.min(S.quota(sid).cap, sh7.used + still.length);
             MSG = null; clearSel(); S.save(); closeLayer();
             toast(still.length === list6.length
               ? 'Đã gửi tin nhắn mẫu cho ' + still.length + ' Creator'
@@ -1368,8 +1551,9 @@
       case 'ship': {
         function findS(id) { var out = null; db.samples.forEach(function (x) { if (x.id === id) out = x; }); return out; }
         function remind(x) {
+          if (!window.PLANS.take('msgs', sid, 1)) return false;
           x.note = 'Đã nhắc ' + S.fmtDateTime(new Date());
-          var sh = S.shop(sid); sh.used = Math.min(S.quota(sid).cap, sh.used + 1);
+          return true;
         }
 
         if (arg === 'trail') {
@@ -1485,9 +1669,11 @@
           var r6 = findR(arg2); if (!r6) return true;
           var pool2 = db.creators.filter(function (c) { return !S.isBlacklisted(c.id, sid) && S.rel(c, sid).state === 'Mới'; })
             .slice(0, r6.limit);
+          var k6 = window.PLANS.take('invites', sid, pool2.length);
+          if (pool2.length && !k6) return true;
+          pool2 = pool2.slice(0, k6);
           pool2.forEach(function (c) { var r = S.rel(c, sid); r.state = 'Đã mời'; r.saved = true; r.invitedAt = S.fmtDate(new Date()); });
           r6.runs++; r6.last = 'Vừa xong · ' + pool2.length + ' mời · 0 lỗi';
-          var sh4 = S.shop(sid); sh4.used = Math.min(S.quota(sid).cap, sh4.used + pool2.length);
           S.log('Chạy quy tắc “' + r6.name + '” · ' + pool2.length + ' lời mời', 'Chiến dịch', sid);
           S.save(); toast('Đã mời ' + pool2.length + ' Creator mới khớp bộ lọc'); refresh();
         } else if (arg === 'edit') {
@@ -1523,21 +1709,22 @@
       /* --- cửa hàng --- */
       case 'shop':
         if (arg === 'new') {
+          if (overLimit('shops')) return true;
           askText('Ủy quyền shop mới', 'Tên cửa hàng', '', function (n) {
             if (!n) return;
             var id = 'shop-' + Math.random().toString(36).slice(2, 7);
-            db.shops.push({ id: id, flag: '🇻🇳', name: n, country: 'Việt Nam', cur: '₫', status: 'ok',
-              expires: '24/09/2027', sync: 'Vừa xong', owner: USER(), limit: 300, gap: '45 – 90 giây', used: 0 });
+            db.shops.push({ id: id, flag: S.market().flag, name: n, country: S.market().name, cur: S.cur(), status: 'ok',
+              expires: S.ago(-365), sync: 'Vừa xong', owner: USER(), limit: 300, gap: '45 – 90 giây', used: 0 });
             db.products[id] = [];
             S.log('Ủy quyền cửa hàng “' + n + '”', 'Cài đặt', id);
             S.save(); closeLayer(); toast('Đã thêm cửa hàng, hãy đồng bộ sản phẩm'); location.hash = '#/shops/' + id;
-          }, 'Bước tiếp theo sẽ mở trang cấp quyền của TikTok Shop Partner Center.');
+          }, 'Bước tiếp theo mở trang ủy quyền dịch vụ của TikTok Shop để chủ gian hàng đồng ý cấp quyền.');
         } else if (arg === 'open') { location.hash = '#/shops/' + arg2; }
         else if (arg === 'auth') {
           var sh5 = S.shop(arg2);
           toast('Đang mở trang cấp quyền TikTok Shop…');
           setTimeout(function () {
-            sh5.status = 'ok'; sh5.expires = '24/09/2027'; sh5.sync = 'Vừa xong';
+            sh5.status = 'ok'; sh5.expires = S.ago(-365); sh5.sync = 'Vừa xong';
             if (!sh5.inviteLimit) { sh5.inviteLimit = 10000; sh5.soft = 3000; }
             S.log('Cập nhật ủy quyền ' + sh5.name, 'Cài đặt', sh5.id); S.save();
             toast('Đã cập nhật ủy quyền cho ' + sh5.name); refresh(true);
@@ -1545,7 +1732,15 @@
         } else if (arg === 'sync') { dispatch('sync:shop', el); }
         else if (arg === 'unlink') {
           var sh6 = S.shop(arg2);
-          confirmBox('Gỡ liên kết', 'Gỡ ' + sh6.name + ' khỏi GOPUSH? Dữ liệu đã đồng bộ sẽ bị xóa.', 'Gỡ liên kết', function () {
+          var last = db.shops.length <= 1;
+          confirmBox('Gỡ liên kết', 'Gỡ “' + sh6.name + '” khỏi GOPUSH? Dữ liệu đã đồng bộ sẽ bị xóa.' +
+            (last ? ' Đây là gian hàng cuối cùng: tài khoản sẽ về trạng thái chưa liên kết, mọi tính năng bị khóa tới khi liên kết lại.' : ''), 'Gỡ liên kết', function () {
+            if (last) {
+              window.AUTH.setLinked(false); S.reset(); VIEW = {};
+              state.shop = S.data.shops[0].id; store.set('gopush.shop', state.shop);
+              S.log('Gỡ liên kết ' + sh6.name, 'Cài đặt'); S.save(); closeLayer(); toast('Đã gỡ liên kết gian hàng'); location.hash = '#/home';
+              return;
+            }
             db.shops = db.shops.filter(function (s) { return s.id !== arg2; });
             if (state.shop === arg2 && db.shops.length) { state.shop = db.shops[0].id; store.set('gopush.shop', state.shop); }
             S.save(); closeLayer(); toast('Đã gỡ liên kết'); location.hash = '#/shops';
@@ -1562,6 +1757,7 @@
       /* --- nhóm --- */
       case 'member':
         if (arg === 'new') {
+          if (overLimit('subs')) return true;
           askText('Mời thành viên', 'Email', '', function (e2) {
             if (!e2) return;
             db.members.push({ id: S.uid('m'), name: e2.split('@')[0], email: e2, role: 'BD',
@@ -1571,7 +1767,7 @@
           }, 'Lời mời gửi qua email, hết hạn sau 7 ngày.');
         } else if (arg === 'lock') {
           db.members.forEach(function (m) {
-            if (m.id === arg2) { m.status = m.status === 'Đã khóa' ? 'Hoạt động' : 'Đã khóa'; toast('Đã ' + (m.status === 'Đã khóa' ? 'khóa' : 'mở khóa') + ' ' + m.name); }
+            if (m.id === arg2) { m.status = m.status === 'Đã khóa' ? 'Hoạt động' : 'Đã khóa'; toast((m.status === 'Đã khóa' ? 'Đã khóa “' : 'Đã mở khóa “') + m.name + '”'); }
           });
           S.save(); refresh();
         } else if (arg === 'del') {
@@ -1612,6 +1808,12 @@
         }
         return true;
 
+      /* --- menu GOPUSH AI (ai.js) --- */
+      case 'aix': return window.AIX.action(a.slice(1), el, ctxFor(cur.page), refresh, toast);
+      /* --- Phân loại, Kho, Gắn Tag, tải xuống của module Creator (creators.js) --- */
+      case 'ann': return window.ANN.action(a.slice(1), el, ctxFor(cur.page), refresh, toast);
+      case 'crx': return window.CRX.action(a.slice(1), el, ctxFor(cur.page), refresh, toast);
+
       /* --- GOPUSH AI --- */
       case 'ai':
         if (arg === 'ask') { askAI(arg2); }
@@ -1620,7 +1822,7 @@
           var q = ta ? ta.value.trim() : '';
           if (!q) { toast('Nhập câu hỏi trước đã'); return true; }
           askAI(q);
-        } else if (arg === 'clear') { db.chat = []; S.save(); renderAI(); }
+        } else if (arg === 'clear') { db.chat = []; S.save(); if (onChatPage()) refresh(); else renderAI(); }
         else if (arg === 'close') { state.ai = false; renderAI(); }
         else if (arg === 'redo') { var last = db.chat.filter(function (m) { return m.role === 'me'; }).pop(); if (last) askAI(last.text, true); }
         else if (arg === 'report') {
@@ -1654,7 +1856,6 @@
 
       /* --- cài đặt --- */
       case 'set': togglePath(act.slice(4)); refresh(); return true;
-      case 'save': if (arg === 'settings') { S.save(); toast('Đã lưu thay đổi'); } return true;
       case 'notify': {
         var key = a.slice(1, a.length - 1).join(':'), idx = parseInt(a[a.length - 1], 10);
         var n2 = db.settings.notify[key];
@@ -1662,24 +1863,7 @@
         return true;
       }
       case 'invoice': toast('Đang tải hóa đơn ' + arg); return true;
-      case 'billing':
-        if (arg === 'plan') openModal(U.modal({
-          title: 'Chọn gói',
-          body: ['Starter', 'Growth', 'Scale'].map(function (p) {
-            var on = db.settings.billing.plan === p;
-            return '<label class="ig-pickrow" data-do="plan:' + p + '"><span class="gm-check' + (on ? ' on' : '') + '"></span>' +
-              '<span class="t"><b>' + p + '</b><span class="gm-help">' +
-              ({ Starter: '3 shop · 5 thành viên · 300 lời mời/ngày · 1.900.000 ₫',
-                 Growth: '10 shop · 15 thành viên · 1.000 lời mời/ngày · 4.900.000 ₫',
-                 Scale: 'Không giới hạn shop · 50 thành viên · 5.000 lời mời/ngày · 12.900.000 ₫' })[p] +
-              '</span></span></label>';
-          }).join(''),
-          foot: U.btn('Đóng', { act: 'modal:close' })
-        }));
-        return true;
-      case 'plan':
-        db.settings.billing.plan = arg; S.save(); closeLayer(); toast('Đã đổi sang gói ' + arg); refresh();
-        return true;
+      case 'billing': location.hash = '#/settings/billing'; return true;
 
       /* --- wizard tạo lời mời / đợt nhắn tin --- */
       case 'wz': {
@@ -1703,6 +1887,11 @@
           return true;
         }
         if (res && res.create) {
+          if (res.create === 'Đang chạy') {
+            var wk = ctx.v.wz && ctx.v.wz.kind === 'message' ? 'msgs' : 'invites';
+            if (!window.PLANS.check('tasks', ctx.shop.id).ok) { window.PLANS.denyLimit('tasks', ctx.shop.id); return true; }
+            if (window.PLANS.room(wk, ctx.shop.id) <= 0) { window.PLANS.denyLimit(wk, ctx.shop.id); return true; }
+          }
           var made = window.WIZ.create(ctx, res.create);
           var vw5 = vs(cur.page.id);
           vw5.f = { batch: made.batchId }; vw5.group = false; vw5.tab = 0; vw5.page = 1;
@@ -1829,8 +2018,10 @@
     collab: ['So sánh hiệu quả các chiến dịch đang chạy', 'Chiến dịch nào nên dừng?', 'Viết lại mẫu lời mời cho tỉ lệ chấp nhận cao hơn'],
     samples: ['Vận đơn nào quá hạn chưa có video?', 'Creator nào hay xin mẫu mà không đăng?', 'Tỉ lệ lên nội dung theo sản phẩm'],
     results: ['Tổng quan 30 ngày qua', 'Nguồn GMV đến từ đâu?', 'Dự báo GMV tháng tới'],
-    business: ['Ai đang dùng nhiều hạn mức nhất?', 'Shop nào sắp hết hạn ủy quyền?', 'Tóm tắt nhật ký tuần này']
+    business: ['Ai đang dùng nhiều hạn mức nhất?', 'Shop nào sắp hết hạn ủy quyền?', 'Tóm tắt nhật ký tuần này'],
+    ai: ['Tổng quan 30 ngày qua', 'So sánh hiệu quả các chiến dịch đang chạy', 'Creator nào nên tăng hoa hồng tháng tới?']
   };
+  function onChatPage() { return cur && cur.page.id === 'ai-chat'; }
 
   function aiCtx() {
     var p = cur ? cur.page : null, m = cur ? cur.module : null, view = p ? vs(p.id) : null;
@@ -1858,23 +2049,35 @@
   }
 
   function toggleAI(force) {
+    if (!state.ai && (!window.AUTH.linked() || !window.PLANS.has('ai'))) { denyHome('ai'); return; }
     state.ai = force === true ? true : !state.ai;
     renderAI();
     if (state.ai) { var ta = document.querySelector('#aipanel [data-prompt]'); if (ta) ta.focus(); }
   }
 
+  /* trên trang AI Chat thì trả lời ngay trong trang (có các bước suy nghĩ),
+     ở trang khác thì mở panel bên phải */
   function askAI(q, redo) {
-    var db = S.data;
+    if (!window.AUTH.linked() || !window.PLANS.has('ai')) { denyHome('ai'); return; }
+    var db = S.data, full = onChatPage();
     if (!redo) db.chat.push({ role: 'me', text: q, ctx: aiCtx().page });
-    db.chat.push({ role: 'ai', html: '<p class="gm-muted">Đang đọc dữ liệu…</p>' });
+    var reply = { role: 'ai', pending: true };
+    db.chat.push(reply);
     S.save();
-    state.ai = true; renderAI();
+    function show() {
+      if (onChatPage()) {
+        refresh();
+        var sc = document.getElementById('aix-chat'); if (sc) sc.scrollTop = sc.scrollHeight;
+        var ta = document.querySelector('.ig-xchat [data-prompt]'); if (ta) ta.focus();
+      } else { state.ai = true; renderAI(); }
+    }
+    show();
     setTimeout(function () {
       var ctx = { shop: S.shop(state.shop), v: v() };
-      db.chat[db.chat.length - 1] = { role: 'ai', html: P.aiAnswer(q, ctx) };
+      reply.pending = false; reply.html = P.aiAnswer(q, ctx);
       if (db.settings.ai.logAll) S.log('Hỏi GOPUSH AI: ' + q.slice(0, 60), 'Khác', state.shop);
-      S.save(); renderAI();
-    }, 420);
+      S.save(); show();
+    }, full ? 2100 : 420);
   }
 
   var PICKED = {};
@@ -1926,7 +2129,7 @@
         var rr = S.rel(cc, sid); if (rr.tags.indexOf(val) < 0) rr.tags.push(val);
       });
       var tg = S.tag(val);
-      toast('Đã gắn nhãn “' + (tg ? tg.name : '') + '” cho ' + selected().length + ' Creator');
+      toast('Đã gắn tag “' + (tg ? tg.name : '') + '” cho ' + selected().length + ' Creator');
       clearSel(); S.save(); refresh(); return;
     }
     if (head === 'owner') {
@@ -1990,23 +2193,27 @@
   }
 
   function userMenu(anchor) {
-    openMenu(anchor, '<div class="ig-me-mini">' + U.bear() + '<span><b>' + U.esc(USER()) + '</b><small>' +
-        U.esc(S.data.settings.profile.email) + '</small></span></div>' +
+    var adm = window.AUTH && window.AUTH.isAdmin();
+    openMenu(anchor, '<div class="ig-me-mini">' + U.bear() + '<span><b>' + U.esc(USER()) +
+        (adm ? ' <em class="ig-role-adm">Admin hệ thống</em>' : '') + '</b><small>' +
+        U.esc(S.data.settings.profile.email) + '</small>' +
+        (adm ? '' : '<a class="ig-me-plan" data-go="/settings/billing">' + planTag(true) + '<span>Xem gói</span></a>') + '</span></div>' +
       '<button data-go="/settings/profile">' + ic('user') + 'Hồ sơ</button>' +
       '<button data-go="/settings/billing">' + ic('card') + 'Gói &amp; thanh toán</button>' +
       '<div class="sep"></div>' +
-      '<div class="row">' + ic('globe') + '<span>Ngôn ngữ</span><span class="gm-seg">' +
-        '<button class="' + (state.lang === 'vi' ? 'on' : '') + '" data-lang="vi">VI</button>' +
-        '<button class="' + (state.lang === 'en' ? 'on' : '') + '" data-lang="en">EN</button></span></div>' +
+
       '<div class="row">' + ic(state.theme === 'dark' ? 'moon' : 'sun') + '<span>Giao diện tối</span>' +
         '<span class="gm-switch' + (state.theme === 'dark' ? ' on' : '') + '" data-themetoggle role="switch" aria-checked="' + (state.theme === 'dark') + '"></span></div>' +
       '<button data-helpcenter>' + ic('help') + 'Trợ giúp &amp; liên hệ hỗ trợ</button>' +
       '<div class="sep"></div>' +
       '<button data-reset>' + ic('refresh') + 'Đặt lại dữ liệu thử</button>' +
-      '<button data-go="/">' + ic('logout') + U.esc(t('signout')) + '</button>');
+      '<button data-signout>' + ic('logout') + U.esc(t('signout')) + '</button>');
   }
 
-  function setLang(l) { state.lang = l; store.set('gopush.lang', l); document.documentElement.lang = l; render(); }
+  function setLang(l, noRender) {
+    state.lang = l; store.set('gopush.lang', l); S.setLang(l); document.documentElement.lang = l; I.use(l);
+    if (!noRender) render();
+  }
   function setTheme(th) {
     state.theme = th; store.set('gopush.theme', th);
     document.documentElement.setAttribute('data-theme', th);
@@ -2022,6 +2229,14 @@
     /* menu hệ thống */
     if ((el = e.target.closest('#shop-btn'))) { e.preventDefault(); shopMenu(el); return; }
     if ((el = e.target.closest('#user-btn'))) { e.preventDefault(); userMenu(el); return; }
+    if ((el = e.target.closest('#market-btn'))) { e.preventDefault(); marketMenu(el); return; }
+    if ((el = e.target.closest('#lang-btn'))) { e.preventDefault(); langMenu(el); return; }
+    if ((el = e.target.closest('[data-market]'))) { closeMenus(); setMarket(el.getAttribute('data-market')); return; }
+    if (e.target.closest('[data-signout]')) {
+      closeMenus();
+      window.AUTH.signOut().then(function () { S.useUser(''); state.ai = false; VIEW = {}; location.hash = '#/login'; });
+      return;
+    }
     if ((el = e.target.closest('[data-shop], [data-pickshop]'))) {
       var pick = el.getAttribute('data-shop') || el.getAttribute('data-pickshop');
       if (pick === 'all') { state.all = true; }
@@ -2040,6 +2255,13 @@
        (hoặc màn hình hẹp) thì menu con bị ẩn, nên đi thẳng tới trang đầu của module. */
     if ((el = e.target.closest('[data-navtoggle]'))) {
       e.preventDefault();
+      /* module không có trang nào mở được với gói hiện tại: hiện popup luôn */
+      var modId = el.getAttribute('data-navtoggle'), mod = D.MODULES.filter(function (x) { return x.id === modId; })[0];
+      if (mod && !mod.pages.some(function (pg) { return !pg.hidden && canOpen(pg); })) {
+        if (location.hash !== '#/home') location.hash = '#/home';
+        setTimeout(function () { denyFor(mod.pages[0].feature); }, 80);
+        return;
+      }
       var narrow = document.querySelector('.ig-app.sub-collapsed') || window.innerWidth <= 1100;
       if (narrow) { location.hash = el.getAttribute('data-first'); return; }
       var mid = el.getAttribute('data-navtoggle'), grp = el.parentNode, i = NAV_OPEN.indexOf(mid);
@@ -2363,8 +2585,12 @@
     var r = S.rel(cr, sid), from = r.state;
     if (from === to) { refresh(); return; }
     function apply() {
+      if (to === 'Đã mời' && !r.invitedAt) {
+        closeLayer();
+        if (!window.PLANS.take('invites', sid, 1)) { refresh(); return; }
+        r.invitedAt = S.fmtDateTime(new Date());
+      }
       r.state = to;
-      if (to === 'Đã mời' && !r.invitedAt) { r.invitedAt = S.fmtDateTime(new Date()); S.shop(sid).used = (S.shop(sid).used || 0) + 1; }
       S.log('Chuyển ' + cr.name + ': ' + from + ' → ' + to, 'Creator', sid);
       S.save(); closeLayer(); toast(cr.name + ' → ' + to); refresh();
     }
@@ -2387,5 +2613,7 @@
   document.documentElement.setAttribute('data-theme', state.theme);
   document.documentElement.lang = state.lang;
   if (!location.hash) location.hash = '#/';
-  render();
+  /* chờ biết trạng thái đăng nhập (Firebase trả về bất đồng bộ) rồi mới vẽ lần đầu */
+  document.body.innerHTML = '<div class="ig-boot"><span></span></div>';
+  window.AUTH.ready.then(render, render);
 })();

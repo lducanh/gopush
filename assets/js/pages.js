@@ -62,11 +62,12 @@
     if (n < 300000) return '100K – 300K';
     return 'Trên 300K';
   }
-  var GMV_OPTS = ['all', 'Trên 100tr', 'Trên 500tr', 'Trên 1 tỷ'];
+  /* mốc GMV lưu theo đơn vị gốc; nhãn hiển thị theo tiền tệ của thị trường đang chọn */
+  var GMV_STEPS = [1e8, 5e8, 1e9];
+  function gmvLabel(v) { return 'Trên ' + S.amt(v); }
+  function gmvOpts() { return ['all'].concat(GMV_STEPS.map(gmvLabel)); }
   function gmvPass(g, band) {
-    if (band === 'Trên 100tr') return g > 1e8;
-    if (band === 'Trên 500tr') return g > 5e8;
-    if (band === 'Trên 1 tỷ') return g > 1e9;
+    for (var i = 0; i < GMV_STEPS.length; i++) if (band === gmvLabel(GMV_STEPS[i])) return g > GMV_STEPS[i];
     return true;
   }
 
@@ -116,7 +117,7 @@
     '<div class="ig-section">' +
       '<div class="ig-sec-head"><h2>Nhịp 7 ngày qua</h2><a class="gm-link" href="#/dashboard">Xem Dashboard đầy đủ</a></div>' +
       '<div class="ig-kpis ig-kpis-4">' +
-        kpi({ i: 'trend', l: 'GMV liên kết (₫)', v: S.money(st.gmv), d: '+18,2%', s: series(st.gmv) }) +
+        kpi({ i: 'trend', l: 'GMV liên kết (' + S.cur() + ')', v: S.money(st.gmv), d: '+18,2%', s: series(st.gmv) }) +
         kpi({ i: 'box', l: 'Đơn liên kết', v: S.num(st.orders), d: '+12,4%', s: series(st.orders) }) +
         kpi({ i: 'send', l: 'Lời mời đã gửi', v: S.num(st.invited), d: '+240', s: series(st.invited) }) +
         kpi({ i: 'video', l: 'Video / live', v: S.num(st.videos), d: '+64', s: series(st.videos) }) +
@@ -202,9 +203,9 @@
     ) +
     '<div class="ig-section">' +
       '<div class="ig-kpis ig-kpis-6">' +
-        kpi({ i: 'trend', t: 0, l: 'GMV liên kết (₫)', v: S.money(gmv), d: '+18,2%', s: series(gmv) }) +
+        kpi({ i: 'trend', t: 0, l: 'GMV liên kết (' + S.cur() + ')', v: S.money(gmv), d: '+18,2%', s: series(gmv) }) +
         kpi({ i: 'box', t: 1, l: 'Đơn liên kết', v: S.num(orders), d: '+12,4%', s: series(orders) }) +
-        kpi({ i: 'wallet', t: 2, l: 'Hoa hồng (₫)', v: S.money(com), d: '+9,8%', s: series(com) }) +
+        kpi({ i: 'wallet', t: 2, l: 'Hoa hồng (' + S.cur() + ')', v: S.money(com), d: '+9,8%', s: series(com) }) +
         kpi({ i: 'send', t: 3, l: 'Creator đã mời', v: S.num(st.invited), d: '+240', s: series(st.invited) }) +
         kpi({ i: 'check', t: 4, l: 'Tỉ lệ chấp nhận', v: S.pct(st.acceptRate), d: '-1,6%', s: series(Math.round(st.acceptRate)) }) +
         kpi({ i: 'video', t: 5, l: 'Video / live', v: S.num(st.videos), d: '+64', s: series(st.videos) }) +
@@ -222,8 +223,8 @@
               : (c.v.f.grain === 'Tuần') ? ['T33', 'T34', 'T35', 'T36', 'T37', 'T38']
               : ['18/9', '19/9', '20/9', '21/9', '22/9', '23/9', '24/9'],
             series: [
-              { name: 'GMV (triệu ₫)', values: series(Math.round(gmv / 1e6 / 7), c.v.f.grain && c.v.f.grain !== 'Ngày' ? 6 : 7), color: 'var(--chart-1)' },
-              { name: 'Hoa hồng (triệu ₫)', values: series(Math.round(com / 1e6 / 7), c.v.f.grain && c.v.f.grain !== 'Ngày' ? 6 : 7), color: 'var(--chart-2)', fill: false }
+              { name: 'GMV (' + S.unit().label + ' ' + S.cur() + ')', values: series(Math.round(gmv / S.unit().div / 7), c.v.f.grain && c.v.f.grain !== 'Ngày' ? 6 : 7), color: 'var(--chart-1)' },
+              { name: 'Hoa hồng (' + S.unit().label + ' ' + S.cur() + ')', values: series(Math.round(com / S.unit().div / 7), c.v.f.grain && c.v.f.grain !== 'Ngày' ? 6 : 7), color: 'var(--chart-2)', fill: false }
             ]
           })
         }) +
@@ -320,15 +321,19 @@
         if (!t || r.tags.indexOf(t.id) < 0) return false;
       }
       if (fv(v, 'owner') && r.owner !== v.f.owner) return false;
+      if (fv(v, 'seg') && window.CRX && !window.CRX.inSeg(v.f.seg, cr)) return false;
       if (opts.state && r.state !== opts.state) return false;
       return true;
     });
     return rows;
   }
 
+  function segOpts() { return ['all'].concat(window.CRX ? window.CRX.segNames() : []); }
+  /* bộ lọc Phân loại thuộc tính năng 'segments' (từ gói Cơ bản) */
+  function segSel(v) { return window.PLANS && !window.PLANS.has('segments') ? '' : U.sel('Phân loại', 'seg', v.f.seg, segOpts()); }
   function creatorFilterQuick(c) {
     var v = c.v;
-    return U.sel('Ngành hàng', 'cat', v.f.cat, ['all'].concat(['Đồ uống', 'Ẩm thực', 'Gia dụng', 'Làm đẹp', 'Thời trang', 'Công nghệ', 'Mẹ và bé', 'Sức khỏe'])) +
+    return segSel(v) + U.sel('Ngành hàng', 'cat', v.f.cat, ['all'].concat(['Đồ uống', 'Ẩm thực', 'Gia dụng', 'Làm đẹp', 'Thời trang', 'Công nghệ', 'Mẹ và bé', 'Sức khỏe'])) +
       U.sel('Follower', 'fol', v.f.fol, FOLLOWER_OPTS) +
       U.sel('Quan hệ', 'rel', v.f.rel, ['all', 'Mới', 'Đã mời', 'Đã chấp nhận', 'Đang hợp tác', 'Ngừng']);
   }
@@ -343,7 +348,7 @@
   }
 
   var FLABEL = { cat: 'Ngành hàng', fol: 'Follower', rel: 'Quan hệ', country: 'Quốc gia', type: 'Nội dung',
-    gmv: 'GMV 30 ngày', contact: 'Liên hệ', tag: 'Nhãn', owner: 'Phụ trách', status: 'Trạng thái',
+    gmv: 'GMV 30 ngày', contact: 'Liên hệ', tag: 'Tag', seg: 'Phân loại', owner: 'Phụ trách', status: 'Trạng thái',
     kind: 'Loại', carrier: 'Vận chuyển', period: 'Kỳ', shop: 'Cửa hàng', grain: 'Mức', role: 'Vai trò',
     who: 'Người thực hiện', late: 'Giao xong' };
 
@@ -355,13 +360,13 @@
     var n = selCount(v);
 
     return c.head(
-      U.btn('Xuất Excel', { icon: 'download', act: 'export:creators' }) +
+      U.btn('Tải xuống', { icon: 'download', act: 'crx:dl:discover' }) +
       U.btn('Lưu bộ lọc', { icon: 'bookmark', act: 'filters:save' }) +
       U.btn('Tạo lời mời từ kết quả', { variant: 'primary', icon: 'send', act: 'campaign:new:invite' })
     ) +
     U.tabs([{ t: 'Kết quả', n: S.num(all.length) }, { t: 'Bộ lọc đã lưu', n: String((v.saved || []).length) }], v.tab) +
     (v.tab === 1 ? savedFilters(c) :
-    quickChips(v, [['Chưa mời', 'rel', 'Mới'], ['GMV trên 500tr', 'gmv', 'Trên 500tr'],
+    quickChips(v, [['Chưa mời', 'rel', 'Mới'], ['GMV trên ' + S.amt(5e8), 'gmv', gmvLabel(5e8)],
       ['Có liên hệ', 'contact', 'Có liên hệ'], ['Chuyên LIVE', 'type', 'LIVE']]) +
     U.filters({
       ph: 'Tên hoặc @username', q: v.q,
@@ -374,14 +379,14 @@
         { l: 'Cơ bản', f: U.sel('Quốc gia', 'country', v.f.country, ['all', 'Việt Nam', 'Thái Lan', 'Malaysia']) +
           U.sel('Loại nội dung', 'type', v.f.type, ['all', 'Video', 'LIVE']) +
           U.sel('Thông tin liên hệ', 'contact', v.f.contact, ['all', 'Có liên hệ', 'Chưa có liên hệ']) },
-        { l: 'Hiệu suất bán', f: U.sel('GMV 30 ngày', 'gmv', v.f.gmv, GMV_OPTS) },
-        { l: 'Quan hệ với shop', f: U.sel('Nhãn', 'tag', v.f.tag, ['all'].concat(S.data.tags.map(function (t) { return t.name; }))) +
+        { l: 'Hiệu suất bán', f: U.sel('GMV 30 ngày', 'gmv', v.f.gmv, gmvOpts()) },
+        { l: 'Quan hệ với shop', f: U.sel('Tag', 'tag', v.f.tag, ['all'].concat(S.data.tags.map(function (t) { return t.name; }))) +
           U.sel('Người phụ trách', 'owner', v.f.owner, ['all', 'user01', 'Lê Quốc Huy', 'Ngô Thảo Vy']) }
       ]
     }) +
     U.selbar(n,
       U.btn('Lưu vào Kho', { sm: true, variant: 'ghost', icon: 'bookmark', act: 'bulk:save' }) +
-      U.btn('Gắn nhãn', { sm: true, variant: 'ghost', icon: 'tag', act: 'bulk:tag' }) +
+      U.btn('Gắn tag', { sm: true, variant: 'ghost', icon: 'tag', act: 'bulk:tag' }) +
       U.btn('Tạo lời mời', { sm: true, variant: 'ghost', icon: 'send', act: 'bulk:invite' }) +
       U.btn('Blacklist', { sm: true, variant: 'ghost', icon: 'ban', act: 'bulk:black' })) +
     U.table({
@@ -389,7 +394,7 @@
       cols: [
         { k: 'name', t: 'Creator', s: 'name', r: function (r) { return U.creatorCell(r); } },
         { k: 'cat', t: 'Ngành hàng', s: 'cat' },
-        { k: 'followers', t: 'Follower', cls: 'num', s: 'followers', r: function (r) { return S.money(r.followers); } },
+        { k: 'followers', t: 'Follower', cls: 'num', s: 'followers', r: function (r) { return S.short(r.followers); } },
         { k: 'gmv30', t: 'GMV 30 ngày', cls: 'num', s: 'gmv30', r: function (r) { return S.money(r.gmv30); } },
         { k: 'postRate', t: 'Tỉ lệ đăng', cls: 'num', s: 'postRate', r: function (r) { return r.postRate + '%'; } },
         { k: '', t: 'Nội dung', r: function (r) { return ctype(r); } },
@@ -435,8 +440,8 @@
       '<button class="' + (mode === 'kanban' ? 'on' : '') + '" data-do="view:kanban">' + ic('columns') + 'Pipeline</button></div>';
 
     return c.head(
-      U.btn('Nhập Excel', { icon: 'upload', act: 'import:creators' }) +
-      U.btn('Xuất Excel', { icon: 'download', act: 'export:creators' }) +
+      U.btn('Tải lên', { icon: 'upload', act: 'crx:up' }) +
+      U.btn('Tải xuống', { icon: 'download', act: 'crx:dl:library' }) +
       U.btn('Thêm Creator', { variant: 'primary', icon: 'plus', act: 'creator:add' })
     ) +
     U.tabs(['Tất cả', 'Mới', 'Đã mời', 'Đã chấp nhận', 'Đang hợp tác', 'Ngừng'].map(function (t, i) {
@@ -444,7 +449,8 @@
     }), v.tab) +
     U.filters({
       ph: 'Tìm trong kho Creator', q: v.q,
-      quick: U.sel('Nhãn', 'tag', v.f.tag, ['all'].concat(db.tags.map(function (t) { return t.name; }))) +
+      quick: segSel(v) +
+        U.sel('Tag', 'tag', v.f.tag, ['all'].concat(db.tags.map(function (t) { return t.name; }))) +
         U.sel('Người phụ trách', 'owner', v.f.owner, ['all', 'user01', 'Lê Quốc Huy', 'Ngô Thảo Vy']) +
         U.sel('Ngành hàng', 'cat', v.f.cat, ['all'].concat(['Đồ uống', 'Ẩm thực', 'Gia dụng', 'Làm đẹp', 'Thời trang', 'Công nghệ', 'Mẹ và bé', 'Sức khỏe'])),
       chips: chips(v, FLABEL),
@@ -452,7 +458,7 @@
     }) +
     (mode === 'kanban' ? pipeline(base, sid) :
     U.selbar(n,
-      U.btn('Gắn nhãn', { sm: true, variant: 'ghost', icon: 'tag', act: 'bulk:tag' }) +
+      U.btn('Gắn tag', { sm: true, variant: 'ghost', icon: 'tag', act: 'bulk:tag' }) +
       U.btn('Nhắn tin', { sm: true, variant: 'ghost', icon: 'msgSend', act: 'bulk:message' }) +
       U.btn('Bỏ khỏi Kho', { sm: true, variant: 'ghost', icon: 'trash', act: 'bulk:unsave' }) +
       U.btn('Blacklist', { sm: true, variant: 'ghost', icon: 'ban', act: 'bulk:black' })) +
@@ -461,10 +467,10 @@
       cols: [
         { k: 'name', t: 'Creator', s: 'name', r: function (r) { return U.creatorCell(r); } },
         { k: '', t: 'Trạng thái quan hệ', r: function (r) { return U.tag(S.rel(r, sid).state); } },
-        { k: '', t: 'Nhãn', r: function (r) {
+        { k: '', t: 'Tag', r: function (r) {
           var t = S.rel(r, sid).tags.map(function (id) { var x = S.tag(id); return x ? '<span class="gm-tag">' + U.esc(x.name) + '</span>' : ''; }).join(' ');
           return t || '<span class="gm-muted">—</span>'; } },
-        { k: 'followers', t: 'Follower', cls: 'num', s: 'followers', r: function (r) { return S.money(r.followers); } },
+        { k: 'followers', t: 'Follower', cls: 'num', s: 'followers', r: function (r) { return S.short(r.followers); } },
         { k: 'gmv30', t: 'GMV 30 ngày', cls: 'num', s: 'gmv30', r: function (r) { return S.money(r.gmv30); } },
         { k: 'postRate', t: 'Tỉ lệ đăng', cls: 'num', s: 'postRate', r: function (r) { return r.postRate + '%'; } },
         { k: '', t: 'Phụ trách', r: function (r) { return U.esc(S.rel(r, sid).owner); } },
@@ -495,7 +501,7 @@
           return '<article class="ig-kcard" draggable="true" data-cr="' + cr.id + '" data-do="creator:' + cr.id + '">' +
             '<div class="h"><span class="gm-avatar">' + U.esc(U.initials(cr.name)) + '</span>' +
               '<div><b>' + U.esc(cr.name) + '</b><span>@' + U.esc(cr.user) + '</span></div></div>' +
-            '<div class="m"><span>' + S.money(cr.followers) + ' follower</span><span>GMV <b class="gm-num">' + S.money(cr.gmv30) + '</b></span></div>' +
+            '<div class="m"><span>' + S.short(cr.followers) + ' follower</span><span>GMV <b class="gm-num">' + S.money(cr.gmv30) + '</b></span></div>' +
             '<div class="f"><span class="gm-help">' + U.esc(cr.cat) + '</span><span class="gm-help">' + U.esc(r.owner) + '</span></div></article>';
         }).join('') +
         (list.length > 20 ? '<p class="more">+' + S.num(list.length - 20) + ' Creator — chuyển sang Bảng để xem hết</p>' : '') +
@@ -505,31 +511,6 @@
 
 
 
-  P.tags = function (c) {
-    var db = S.data, v = c.v, sid = c.shop.id;
-    var rows = db.tags.filter(function (t) { return hit(v.q, [t.name, t.desc]); }).map(function (t) {
-      var count = db.creators.filter(function (cr) {
-        return Object.keys(cr.rel).some(function (k) { return cr.rel[k].tags.indexOf(t.id) > -1; });
-      }).length;
-      return { id: t.id, name: t.name, desc: t.desc, by: t.by, count: count };
-    });
-    return c.head(U.btn('Tạo nhãn', { variant: 'primary', icon: 'plus', act: 'tag:new' })) +
-    '<div class="ig-section">' + U.banner('Nhãn dùng chung cho cả nhóm và cho mọi cửa hàng. Xóa nhãn không xóa Creator.') + '</div>' +
-    U.filters({ ph: 'Tìm nhãn', q: v.q, right: '<span class="ig-fmeta"><b class="gm-num">' + rows.length + '</b> nhãn</span>' }) +
-    U.table({
-      sort: v.sort, dir: v.dir || -1,
-      cols: [
-        { k: 'name', t: 'Nhãn', s: 'name', r: function (r) { return '<span class="gm-tag gm-tag-ink">' + ic('tag') + U.esc(r.name) + '</span>'; } },
-        { k: 'desc', t: 'Mô tả' },
-        { k: 'count', t: 'Số Creator', cls: 'num', s: 'count' },
-        { k: 'by', t: 'Người tạo' },
-        { k: '', t: '', cls: 'col-actions', r: function (r) {
-          return U.iconBtn('edit', 'Sửa', 'tag:edit:' + r.id) + U.iconBtn('trash', 'Xóa', 'tag:del:' + r.id); } }
-      ],
-      rows: sortBy(rows, v.sort, v.dir || -1)
-    });
-  };
-
   P.blacklist = function (c) {
     var db = S.data, v = c.v, sid = c.shop.id;
     var rows = db.blacklist.filter(function (b) { return b.shopId === sid; }).map(function (b) {
@@ -537,7 +518,8 @@
       return { id: b.id, cr: cr, name: cr.name, reason: b.reason, by: b.by, at: b.at };
     }).filter(function (r) { return hit(v.q, [r.name, r.reason]); });
 
-    return c.head(U.btn('Thêm vào blacklist', { variant: 'primary', icon: 'ban', act: 'black:new' })) +
+    return c.head(U.btn('Tải xuống', { icon: 'download', act: 'crx:dl:blacklist' }) +
+      U.btn('Chặn Creator', { variant: 'primary', icon: 'ban', act: 'black:new' }), { title: 'Blacklist · Creator bị chặn' }) +
     '<div class="ig-section">' +
       U.banner('Creator trong blacklist bị loại khỏi mọi chiến dịch và mọi quy tắc tự động hóa của cửa hàng <b>' +
         U.esc(c.shop.name) + '</b>.', 'warning', 'alert') + '</div>' +
@@ -731,9 +713,9 @@
           U.tiktok('https://www.tiktok.com/@' + ci.username) +
           (s.isLibrary ? '<span class="gm-tag gm-tag-green">Đã lưu</span>' : '') +
           (s.isBlack ? '<span class="gm-tag gm-tag-red">Danh sách đen</span>' : '') + '</div>' +
-        '<div class="s" title="' + U.attr(ci.nickname + ' · ' + S.money(ci.followerCount) + ' follower · Ngành hàng: ' +
+        '<div class="s" title="' + U.attr(ci.nickname + ' · ' + S.short(ci.followerCount) + ' follower · Ngành hàng: ' +
           (ind.length ? ind.map(function (x) { return x.name; }).join(', ') : '—')) + '">' +
-          U.esc(ci.nickname) + ' · ' + S.money(ci.followerCount) + ' follower · ' +
+          U.esc(ci.nickname) + ' · ' + S.short(ci.followerCount) + ' follower · ' +
           U.esc(ind.length ? ind[0].name : '—') + more + '</div>' +
       '</div></div>';
   }
@@ -772,8 +754,7 @@
           r: function (r) { return Math.round(Number(r.fulfillmentPercentage) || 0) + '%'; } },
         { k: '', t: 'GMV 30 ngày', cls: 'num',
           th: 'Doanh số (GMV) của Creator trong 30 ngày qua.',
-          r: function (r) { return S.money(Number(String(r.gmvCount).replace(/[^\d]/g, ''))) + ' ' +
-            (r.gmvCurrency === 'VND' ? '₫' : r.gmvCurrency); } },
+          r: function (r) { return S.amt(Number(String(r.gmvCount).replace(/[^\d]/g, ''))); } },
         { k: '', t: 'Lượt xem TB mỗi video', cls: 'num',
           th: 'Lượt xem trung bình mỗi video của Creator trong 30 ngày qua.',
           r: function (r) { return S.num(r.ecVideoView); } },
@@ -814,7 +795,7 @@
           var views = cs.reduce(function (a, x) { return a + x.views; }, 0);
           return '<button class="ig-clink" data-do="sample:content:' + U.attr(r.id) + '">' + ic('play') +
             '<span><b>' + nv + ' video' + (nl ? ' · ' + nl + ' LIVE' : '') + '</b>' +
-            '<small>' + S.money(views) + ' lượt xem</small></span></button>'; } },
+            '<small>' + S.short(views) + ' lượt xem</small></span></button>'; } },
         { k: '', t: 'Đánh giá', cls: 'num', r: function (r) {
           return r.rating ? '<span class="ig-stars" title="' + U.attr(r.ratingNote || '') + '">' +
             '★'.repeat(r.rating) + '<i>' + '★'.repeat(5 - r.rating) + '</i></span>'
@@ -1056,7 +1037,7 @@
     var rows = [];
     rules.forEach(function (r) {
       for (var i = 0; i < 4; i++) {
-        rows.push({ id: r.id + '-' + i, name: r.name, at: i === 0 ? r.last.split(' · ')[0] : 'Ngày ' + (24 - i) + '/09 08:00',
+        rows.push({ id: r.id + '-' + i, name: r.name, at: i === 0 ? r.last.split(' · ')[0] : S.at(i, 8),
           sent: r.limit - i * 3, err: i === 1 ? 2 : 0, status: i === 1 ? 'Lỗi' : 'Hoàn thành' });
       }
     });
@@ -1094,57 +1075,6 @@
   };
 
   /* ============================================================ 6. Báo cáo */
-  P['report-all'] = function (c) {
-    var v = c.v, db = S.data;
-    var scope = v.f.shop && v.f.shop !== 'Tất cả cửa hàng' ? c.shop.id : 'all';
-    var st = S.stats(scope);
-    var live = db.shops.filter(function (s) { return s.status !== 'err'; });
-    var tot = live.reduce(function (a, s) { return a + S.stats(s.id).gmv; }, 0) || 1;
-    var SHOP_C = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-4)', 'var(--chart-5)'];
-    var rows = live.map(function (s, i) {
-      var ss = S.stats(s.id);
-      return { id: s.id, s: s.flag + ' ' + s.name, raw: ss.gmv, c: SHOP_C[i % SHOP_C.length],
-        gmv: S.money(ss.gmv), ord: S.num(ss.orders), com: S.money(ss.com), vid: S.num(ss.videos), cre: S.num(ss.working),
-        share: Math.round(ss.gmv / tot * 100) };
-    });
-    return c.head(
-      U.sel('30 ngày qua', 'period', v.f.period, ['7 ngày qua', '30 ngày qua', '90 ngày qua']) +
-      U.sel('Tất cả cửa hàng', 'shop', v.f.shop, ['Tất cả cửa hàng', c.shop.name]) +
-      U.btn('Xuất Excel', { icon: 'download', act: 'export:report' })
-    ) +
-    '<div class="ig-section">' +
-      '<div class="ig-kpis ig-kpis-5">' +
-        kpi({ i: 'trend', l: 'GMV liên kết (₫)', v: S.money(st.gmv), d: '+18,2%', s: series(st.gmv) }) +
-        kpi({ i: 'box', l: 'Đơn liên kết', v: S.num(st.orders), d: '+12,4%', s: series(st.orders) }) +
-        kpi({ i: 'wallet', l: 'Hoa hồng (₫)', v: S.money(st.com), d: '+9,8%', s: series(st.com) }) +
-        kpi({ i: 'video', l: 'Video / live', v: S.num(st.videos), d: '+17,1%', s: series(st.videos) }) +
-        kpi({ i: 'users', l: 'Creator hoạt động', v: S.num(st.working), d: '+28', s: series(st.working) }) +
-      '</div>' +
-      '<div class="ig-dash ig-dash-2">' +
-        U.card({
-          title: 'Xu hướng theo tuần',
-          body: CH.line({ alt: 'GMV và hoa hồng theo tuần', h: 300, labels: ['T33', 'T34', 'T35', 'T36', 'T37', 'T38'],
-            series: [{ name: 'GMV (triệu ₫)', values: series(Math.round(st.gmv / 1e6 / 6), 6), color: 'var(--chart-1)' },
-              { name: 'Hoa hồng (triệu ₫)', values: series(Math.round(st.com / 1e6 / 6), 6), color: 'var(--chart-2)', fill: false }] })
-        }) +
-        U.card({
-          title: 'Tỉ trọng GMV theo cửa hàng',
-          body: CH.donut({ alt: 'Tỉ trọng GMV theo cửa hàng', value: S.money(tot), label: 'GMV kỳ này',
-            data: rows.map(function (r) { return { l: r.s, v: r.raw, c: r.c }; }) })
-        }) +
-      '</div>' +
-      U.card({ title: 'Theo cửa hàng', cls: 'gm-card-tablewrap', body: U.table({
-        cols: [{ k: 's', t: 'Cửa hàng', r: function (r) {
-            return '<span style="display:inline-flex;align-items:center;gap:8px"><i class="gm-dot" style="background:' + r.c + '"></i>' + U.esc(r.s) + '</span>'; } },
-          { k: 'gmv', t: 'GMV', cls: 'num' },
-          { k: '', t: 'Tỉ trọng', r: function (r) {
-            return '<span class="ig-prog"><span class="tr"><i style="width:' + r.share + '%"></i></span><span class="gm-num">' + r.share + '%</span></span>'; } },
-          { k: 'ord', t: 'Đơn', cls: 'num' },
-          { k: 'com', t: 'Hoa hồng', cls: 'num' }, { k: 'vid', t: 'Video/live', cls: 'num' },
-          { k: 'cre', t: 'Creator hoạt động', cls: 'num' }], rows: rows }) }) +
-    '</div>';
-  };
-
   P['report-campaign'] = function (c) {
     var db = S.data, v = c.v, sid = c.shop.id;
     var rows = db.campaigns.filter(function (x) { return inScope(c.scope, x.shopId) && x.kind === 'invite' && hit(v.q, [x.name]); })
@@ -1207,9 +1137,9 @@
       quick: U.sel('Kỳ', 'period', v.f.period, ['7 ngày qua', '30 ngày qua', '90 ngày qua']) +
         U.sel('Nhóm theo', 'group', v.f.group, ['Creator', 'Ngành hàng']) +
         U.sel('Hiển thị', 'view', v.f.view, ['Bảng', 'Biểu đồ']),
-      chips: chips(v, { period: 'Kỳ', group: 'Nhóm theo', view: 'Hiển thị', tag: 'Nhãn' }),
+      chips: chips(v, { period: 'Kỳ', group: 'Nhóm theo', view: 'Hiển thị', tag: 'Tag' }),
       groups: [
-        { l: 'Phạm vi', f: U.sel('Nhãn', 'tag', v.f.tag, ['all'].concat(db.tags.map(function (t) { return t.name; }))) +
+        { l: 'Phạm vi', f: U.sel('Tag', 'tag', v.f.tag, ['all'].concat(db.tags.map(function (t) { return t.name; }))) +
           U.sel('Ngành hàng', 'cat', v.f.cat, ['all', 'Đồ uống', 'Ẩm thực', 'Gia dụng', 'Làm đẹp']) },
         { l: 'Chỉ số', f: U.sel('GMV', 'm1', 'GMV', ['GMV']) + U.sel('Hoa hồng', 'm2', 'Hoa hồng', ['Hoa hồng']) +
           U.sel('Tỉ lệ đăng', 'm3', 'Tỉ lệ đăng', ['Tỉ lệ đăng']) }
@@ -1237,9 +1167,9 @@
   function msgAi(body, plain) {
     return '<div class="ig-msg">' + aiAvatar() + '<div class="body">' + body +
       (plain ? '' : '<div class="ig-msg-actions">' +
-        U.btn('Tạo report', { sm: true, variant: 'ghost', icon: 'file', act: 'ai:report' }) +
+        U.btn('Tạo report', { sm: true, variant: 'ghost', icon: 'file', act: 'go:/ai/reports' }) +
         U.btn('Xuất Excel', { sm: true, variant: 'ghost', icon: 'download', act: 'export:aiPicks' }) +
-        '<span class="sep"></span>' + U.iconBtn('copy', 'Sao chép', 'toast:Đã sao chép nội dung') +
+        '<span class="sep"></span>' + U.iconBtn('copy', 'Sao chép', 'copymsg') +
         U.iconBtn('thumbUp', 'Hữu ích', 'toast:Cảm ơn phản hồi của bạn') +
         U.iconBtn('refresh', 'Chạy lại', 'ai:redo')) + '</div></div></div>';
   }
@@ -1250,6 +1180,23 @@
     var low = q.toLowerCase();
     var working = db.creators.filter(function (cr) { return S.rel(cr, sid).state === 'Đang hợp tác'; })
       .sort(function (a, b) { return b.gmv30 - a.gmv30; });
+
+    /* câu hỏi về cách dùng hệ thống */
+    if (/cách|làm sao|hướng dẫn|how/.test(low) && /chiến dịch|mời|lời mời/.test(low)) {
+      return '<p>Tạo chiến dịch mời Creator hàng loạt trong 4 bước:</p><ol>' +
+        '<li>Vào <b>Hợp tác › Chiến dịch lời mời</b>, bấm <b>Tạo lời mời</b>.</li>' +
+        '<li>Chọn Creator: từ Kho Creator, từ kết quả <b>AI Tìm Creator</b> hoặc dán danh sách username.</li>' +
+        '<li>Chọn sản phẩm và mức hoa hồng, gắn mẫu lời mời (có thể nhờ <b>Content AI</b> viết).</li>' +
+        '<li>Đặt lịch gửi và khoảng cách giữa các lượt, rồi bấm <b>Bắt đầu</b>. Mỗi lời mời trừ 1 lượt hạn mức trong ngày.</li></ol>' +
+        '<p>Hạn mức hôm nay của ' + U.esc(c.shop.name) + ': đã dùng <b>' + S.num(c.shop.used || 0) + '</b> / ' + S.num(c.shop.limit || c.shop.soft || 0) + ' lượt.</p>';
+    }
+    if (/vai trò|quyền|role|bd\b/.test(low)) {
+      return '<p>GOPUSH có 4 vai trò mặc định, chỉnh trong <b>Cài đặt doanh nghiệp › Vai trò &amp; quyền</b>:</p><ul>' +
+        '<li><b>Chủ sở hữu</b>: toàn quyền, kể cả gói, thanh toán và gỡ shop.</li>' +
+        '<li><b>Quản trị</b>: quản lý thành viên, shop, mọi chiến dịch.</li>' +
+        '<li><b>BD</b>: tìm và mời Creator, duyệt hàng mẫu trên các shop được giao; không xem thanh toán.</li>' +
+        '<li><b>Xem báo cáo</b>: chỉ xem Dashboard và Report AI.</li></ul>';
+    }
 
     if (/hoa hồng|commission|tăng/.test(low)) {
       var picks = working.slice(0, 4).map(function (cr, i) {
@@ -1274,13 +1221,13 @@
         Math.round(picks.reduce(function (a, p) { return a + p.cr.gmv30; }, 0) / (st.gmv || 1) * 100) +
         '%</b> GMV liên kết của shop.</li>' +
         '<li>Tăng như đề xuất làm hoa hồng tháng tăng thêm khoảng <b>' +
-        S.money(Math.round(st.com * 0.045)) + ' ₫</b>, đổi lại GMV dự kiến +9%.</li></ul>';
+        S.amt(Math.round(st.com * 0.045)) + '</b>, đổi lại GMV dự kiến +9%.</li></ul>';
     }
 
     if (/mẫu|video|nhắc/.test(low)) {
       var late = db.samples.filter(function (s) { return s.shopId === sid && S.isLate(s); });
       return '<p>Có <b>' + late.length + ' vận đơn</b> đã ký nhận quá 5 ngày mà Creator chưa lên nội dung, ' +
-        'tương đương khoảng <b>' + S.money(late.length * 16000000) + ' ₫</b> GMV chưa được kích hoạt.</p>' +
+        'tương đương khoảng <b>' + S.amt(late.length * 16000000) + '</b> GMV chưa được kích hoạt.</p>' +
         (late.length ? '<section class="gm-card gm-card-table">' + U.table({
           cols: [{ k: '', t: 'Creator', r: function (r) {
               return U.esc(r.creatorInfo.nickname) + U.tiktok('https://www.tiktok.com/@' + r.creatorInfo.username); } },
@@ -1308,135 +1255,11 @@
     }
 
     return '<p>Tổng quan ' + U.esc(c.shop.name) + ' trong 30 ngày qua:</p><ul>' +
-      '<li>GMV liên kết <b>' + S.money(st.gmv) + ' ₫</b>, hoa hồng <b>' + S.money(st.com) + ' ₫</b>.</li>' +
+      '<li>GMV liên kết <b>' + S.amt(st.gmv) + '</b>, hoa hồng <b>' + S.amt(st.com) + '</b>.</li>' +
       '<li>Đã mời <b>' + S.num(st.invited) + '</b> Creator, tỉ lệ chấp nhận <b>' + S.pct(st.acceptRate) + '</b>.</li>' +
       '<li><b>' + st.pending + '</b> yêu cầu hàng mẫu chờ duyệt và <b>' + st.lateNoVideo + '</b> vận đơn quá hạn chưa có video.</li>' +
       '</ul><p>Bạn có thể hỏi cụ thể hơn, ví dụ “Creator nào nên tăng hoa hồng” hoặc “so sánh 2 chiến dịch đang chạy”.</p>';
   }
-
-  P['ai-home'] = function (c) {
-    var db = S.data;
-    var chat = db.chat.length ? db.chat : [{ role: 'ai', greet: true }];
-    var st = S.stats(c.shop.id);
-
-    var body = chat.map(function (m) {
-      if (m.role === 'me') return msgUser(m.text);
-      if (m.greet) {
-        return msgAi('<p>Chào <b>' + U.esc(db.settings.profile.name) + '</b>. Mình vừa quét <b>' +
-          S.num(db.creators.length) + ' Creator</b>, <b>' +
-          db.campaigns.filter(function (x) { return x.shopId === c.shop.id; }).length + ' chiến dịch</b> và <b>' +
-          db.samples.filter(function (x) { return x.shopId === c.shop.id; }).length + ' yêu cầu hàng mẫu</b> của ' +
-          U.esc(c.shop.name) + '. Hỏi mình bất cứ điều gì về số liệu này.</p>' +
-          '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
-            '<span class="gm-tag">' + ic('database') + 'Creator · Chiến dịch · Hàng mẫu</span>' +
-            '<span class="gm-tag">' + ic('clock') + 'Dữ liệu tới ' + U.esc(c.shop.sync) + '</span></div>', true);
-      }
-      return msgAi(m.html);
-    }).join('');
-
-    var suggests = ['Creator nào nên tăng hoa hồng tháng tới?', 'So sánh hiệu quả các chiến dịch đang chạy',
-      'Vận đơn nào quá hạn chưa có video?', 'Tổng quan 30 ngày qua'];
-
-    return c.head(
-      U.btn('Xóa hội thoại', { icon: 'trash', act: 'ai:clear' }) +
-      U.btn('Cuộc trò chuyện mới', { variant: 'primary', icon: 'newchat', act: 'ai:clear' })
-    ) +
-    '<div class="ig-chat"><div class="ig-chat-wrap">' + body + '</div>' +
-    '<div class="ig-composer"><div class="ig-composer-in">' +
-      '<div class="ig-suggests">' + suggests.map(function (q) {
-        return '<button data-do="ai:ask:' + U.attr(q) + '">' + U.esc(q) + '</button>';
-      }).join('') + '</div>' +
-      '<div class="ig-composer-box">' +
-        '<textarea rows="1" data-prompt placeholder="Hỏi GOPUSH AI về Creator, chiến dịch, hàng mẫu, doanh thu…"></textarea>' +
-        '<div class="ig-composer-row">' +
-          U.btn('Phạm vi: ' + c.shop.name, { sm: true, variant: 'ghost', icon: 'store' }) +
-          U.btn(db.settings.ai.period, { sm: true, variant: 'ghost', icon: 'calendar' }) +
-          '<span class="spacer"></span>' +
-          '<button class="ig-send" data-do="ai:send" aria-label="Gửi">' + ic('arrowUp') + '</button>' +
-        '</div></div>' +
-      '<p class="ig-composer-hint">GOPUSH AI chỉ đọc dữ liệu trong hệ thống, không tự gửi lời mời hay tin nhắn.</p>' +
-    '</div></div></div>';
-  };
-
-  P['ai-reports'] = function (c) {
-    var db = S.data, v = c.v, st = S.stats(c.shop.id);
-    var tabs = ['', 'Hoàn thành', 'Đã lên lịch', 'Nháp'];
-    var counts = tabs.map(function (t) { return t ? db.aiReports.filter(function (r) { return r.status === t; }).length : db.aiReports.length; });
-    var rows = db.aiReports.filter(function (r) {
-      if (v.tab && r.status !== tabs[v.tab]) return false;
-      if (fv(v, 'kind') && r.kind !== v.f.kind) return false;
-      return hit(v.q, [r.name, r.scope, r.by]);
-    });
-    var top = db.creators.filter(function (cr) { return S.rel(cr, c.shop.id).state === 'Đang hợp tác'; })
-      .sort(function (a, b) { return b.gmv30 - a.gmv30; }).slice(0, 6);
-
-    return c.head(
-      U.btn('Lên lịch report', { icon: 'calendar', act: 'report:schedule' }) +
-      U.btn('Tạo report bằng AI', { variant: 'primary', icon: 'ai', act: 'ai:report' })
-    ) +
-    U.tabs(['Tất cả', 'Hoàn thành', 'Đã lên lịch', 'Nháp'].map(function (t, i) { return { t: t, n: String(counts[i]) }; }), v.tab) +
-    U.filters({
-      ph: 'Tìm theo tên report', q: v.q,
-      quick: U.sel('Loại', 'kind', v.f.kind, ['all', 'Phân tích', 'So sánh', 'Cảnh báo', 'Dự báo', 'Đề xuất', 'Tổng hợp']),
-      chips: chips(v, FLABEL),
-      right: '<span class="ig-fmeta"><b class="gm-num">' + rows.length + '</b> report</span>'
-    }) +
-    U.table({
-      cols: [
-        { k: 'name', t: 'Report', r: function (r) {
-          return '<div class="gm-entity" style="min-width:240px"><span class="ig-ai-av" style="background:var(--soft-mist);color:var(--soft-mist-ink)">' +
-            ic('file') + '</span><div><div class="name"><a class="gm-link" data-do="report:open:' + r.id + '">' + U.esc(r.name) + '</a></div>' +
-            '<div class="meta">' + U.esc(r.scope) + '</div></div></div>'; } },
-        { k: 'kind', t: 'Loại', r: function (r) { return '<span class="gm-tag">' + U.esc(r.kind) + '</span>'; } },
-        { k: 'by', t: 'Người tạo', r: function (r) {
-          return r.by === 'GOPUSH AI' ? '<span class="gm-tag gm-tag-ink">' + ic('ai') + 'GOPUSH AI</span>' : U.esc(r.by); } },
-        { k: 'at', t: 'Tạo lúc' },
-        { k: 'status', t: 'Trạng thái', r: function (r) { return U.tag(r.status); } },
-        { k: '', t: '', cls: 'col-actions', r: function (r) {
-          return U.btn('Xem', { sm: true, act: 'report:open:' + r.id }) + ' ' +
-            U.iconBtn('download', 'Tải CSV', 'report:download:' + r.id) +
-            U.iconBtn('share', 'Chia sẻ', 'report:share:' + r.id) +
-            U.iconBtn('trash', 'Xóa', 'report:del:' + r.id); } }
-      ],
-      rows: rows
-    }) +
-
-    '<div class="ig-section"><h2>Report mẫu</h2>' +
-      '<div class="ig-report">' +
-        '<div class="ig-report-head"><div class="t">' +
-          '<h3>Hiệu suất Creator – tháng 9/2026</h3>' +
-          '<div class="meta"><span>' + ic('ai') + ' GOPUSH AI tạo lúc 24/09 11:48</span>' +
-          '<span>' + ic('store') + ' ' + U.esc(c.shop.name) + '</span>' +
-          '<span>' + ic('calendar') + ' 26/08 – 24/09/2026</span></div></div>' +
-        '<div class="ig-head-actions">' +
-          U.btn('Tải CSV', { sm: true, icon: 'download', act: 'export:aiReport' }) +
-          U.btn('Chia sẻ', { sm: true, icon: 'share', act: 'toast:Đã sao chép liên kết chia sẻ' }) +
-        '</div></div>' +
-        '<div class="ig-report-body">' +
-          '<div class="ig-report-sum">' + ic('ai') +
-            '<div><b>Tóm tắt của AI.</b> GMV liên kết đạt ' + S.money(S.stats(c.shop.id).gmv) + ' ₫, tăng 18,2% so với kỳ trước. ' +
-            'Tăng trưởng đến từ nhóm Creator đầu bảng, trong khi nhóm đuôi dài giảm 6%. Điểm nghẽn lớn nhất là ' +
-            st.lateNoVideo + ' vận đơn đã giao quá 5 ngày nhưng chưa có video.</div></div>' +
-          '<div><h4>Chỉ số chính</h4>' + U.stats([
-            { v: S.money(st.gmv) + ' ₫', l: 'GMV liên kết', d: '+18,2%' },
-            { v: S.money(st.com) + ' ₫', l: 'Hoa hồng', d: '+11,4%' },
-            { v: S.num(st.working), l: 'Creator hoạt động', d: '+24' },
-            { v: st.received ? Math.round(st.videos / st.received * 100) + '%' : '0%', l: 'Tỉ lệ lên video sau mẫu', d: '+5%' }
-          ]) + '</div>' +
-          '<div><h4>GMV theo Creator nhóm đầu</h4>' + (top.length ? CH.hbars(top.map(function (r, i) {
-            return { l: r.name, v: r.gmv30, d: S.money(r.gmv30), c: rankColor(i) };
-          })) : U.empty('Chưa có dữ liệu')) + '</div>' +
-          '<div><h4>Khuyến nghị</h4><ul class="ig-rec">' + [
-            'Tăng hoa hồng cho nhóm Creator đầu bảng theo mức đề xuất, áp dụng từ 01/10.',
-            'Gửi nhắc ' + st.lateNoVideo + ' Creator đã nhận mẫu quá 5 ngày, kèm hạn chót lên video.',
-            'Mở chiến dịch mời mới cho ngành có tỉ lệ chấp nhận cao nhất.',
-            'Xem lại chiến dịch có tỉ lệ chấp nhận dưới 15%, nên đổi mẫu tin nhắn kèm.'
-          ].map(function (t, i) { return '<li><span class="n">' + (i + 1) + '</span><span>' + U.esc(t) + '</span></li>'; }).join('') +
-          '</ul></div>' +
-        '</div>' +
-      '</div>' +
-    '</div>';
-  };
 
   P['ai-settings'] = function (c) {
     var a = S.data.settings.ai;
@@ -1445,9 +1268,20 @@
         '<span class="tr"><i style="width:' + p + '%"></i></span></div>';
     }
     var onCount = Object.keys(a.sources).filter(function (k) { return a.sources[k]; }).length;
+    if (!a.model) a.model = 'GPT-5';
     return c.head(U.btn('Khôi phục mặc định', { act: 'ai:resetSettings' }) + U.btn('Lưu thay đổi', { variant: 'primary', act: 'save:settings' })) +
     '<div class="ig-section">' +
       U.banner('Những thiết lập dưới đây quyết định GOPUSH AI được đọc dữ liệu nào và chấm điểm Creator theo tiêu chí gì. Áp dụng cho mọi câu hỏi và mọi report tự động.') +
+      (!(window.AIX && window.AIX.isSystem()) ? '' : U.card({
+        title: 'Model AI (OpenAI) · chỉ tài khoản hệ thống thấy',
+        actions: '<span class="gm-tag gm-tag-ink">' + ic('check') + 'Đã kết nối</span>',
+        body: '<div class="ig-dash ig-dash-3">' +
+          U.field('Model mặc định', U.select(a.model, { pick: 'set:ai.model', opts: window.AIX ? window.AIX.MODELS : ['GPT-5'] }),
+            'Dùng cho AI Chat, Report AI, AI Tìm Creator và Content AI. Mỗi trang vẫn đổi model riêng được.') +
+          U.field('OpenAI API key', '<label class="gm-input"><input type="password" value="sk-proj-••••••••••••••••3f9a" readonly></label>', 'Lưu mã hóa phía máy chủ, không hiện lại sau khi nhập.') +
+          U.field('Hạn mức tháng này', '<div class="ig-weight"><span class="lb">1,2 triệu / 5 triệu token</span><b>24%</b><span class="tr"><i style="width:24%"></i></span></div>') +
+        '</div>'
+      })) +
       '<div class="ig-dash ig-dash-2">' +
         U.card({
           title: 'Nguồn dữ liệu được quét',
@@ -1518,7 +1352,7 @@
     var db = S.data;
     return c.head(U.btn('Ủy quyền shop mới', { variant: 'primary', icon: 'plus', act: 'shop:new' })) +
     '<div class="ig-section">' +
-      U.banner('Mỗi cửa hàng cấp quyền OAuth riêng qua TikTok Shop Partner Center. GOPUSH không dùng cookie hay RPA.') +
+      U.banner('Mỗi cửa hàng ủy quyền riêng qua trang ủy quyền chính thức của TikTok Shop. GOPUSH không dùng cookie hay công cụ giả lập.') +
       '<div class="ig-grid ig-grid-3">' + db.shops.map(function (s) {
         var st = s.status === 'ok' ? 'Đã ủy quyền' : (s.status === 'warn' ? 'Sắp hết hạn' : 'Đã hết hạn');
         var ss = S.stats(s.id);
@@ -1551,7 +1385,7 @@
     if (v.tab === 1) {
       body = U.table({
         cols: [{ k: 'name', t: 'Sản phẩm', s: 'name' }, { k: 'sku', t: 'SKU' },
-          { k: 'price', t: 'Giá', cls: 'num', s: 'price', r: function (r) { return S.num(r.price) + ' ' + s.cur; } },
+          { k: 'price', t: 'Giá', cls: 'num', s: 'price', r: function (r) { return S.vnd(r.price); } },
           { k: 'com', t: 'Hoa hồng', cls: 'num', s: 'com', r: function (r) { return r.com + '%'; } },
           { k: '', t: 'Trạng thái', r: function (r) { return U.tag(r.active ? 'Đang bán' : 'Ngừng'); } },
           { k: '', t: '', cls: 'col-actions', r: function (r) {
@@ -1610,7 +1444,7 @@
         U.card({
           title: 'Kết quả 30 ngày',
           body: U.stats([
-            { v: S.money(ss.gmv) + ' ₫', l: 'GMV liên kết' }, { v: S.num(ss.orders), l: 'Đơn' },
+            { v: S.amt(ss.gmv), l: 'GMV liên kết' }, { v: S.num(ss.orders), l: 'Đơn' },
             { v: S.num(ss.working), l: 'Creator hợp tác' }, { v: S.num(ss.samples), l: 'Yêu cầu mẫu' }
           ])
         }) + '</div></div>';
@@ -1744,48 +1578,11 @@
           '<div style="height:8px"></div>' +
           U.btn('Đổi mật khẩu', { sm: true, act: 'toast:Đã gửi liên kết đổi mật khẩu tới email' }) +
           '<div style="height:12px"></div>' +
-          U.switchRow('Bảo mật 2 lớp (2FA)', p.twofa, 'Ứng dụng xác thực · đã bật 12/08/2026', 'set:profile.twofa') +
+          U.switchRow('Bảo mật 2 lớp (2FA)', p.twofa, 'Ứng dụng xác thực · đã bật ' + S.ago(51), 'set:profile.twofa') +
           U.switchRow('Cảnh báo đăng nhập từ thiết bị mới', p.newDevice, null, 'set:profile.newDevice') +
           '<div style="height:12px"></div>' + U.btn('Đăng xuất mọi thiết bị', { icon: 'logout', act: 'toast:Đã đăng xuất khỏi mọi thiết bị khác' })
       }) +
     '</div></div>';
-  };
-
-  P.billing = function (c) {
-    var b = S.data.settings.billing, db = S.data;
-    var usage = [['Cửa hàng', db.shops.length, 10], ['Thành viên', db.members.length, 15],
-      ['Lời mời mỗi ngày', c.shop.used, S.quota(c.shop.id).cap || 1]];
-    return c.head(U.btn('Đổi gói', { variant: 'primary', act: 'billing:plan' })) +
-    '<div class="ig-section">' +
-      '<div class="ig-dash ig-dash-2">' +
-        U.card({
-          title: 'Gói hiện tại', actions: '<span class="gm-tag gm-tag-ink">' + U.esc(b.plan) + '</span>',
-          body: U.kv([['Chu kỳ', b.cycle], ['Giá', b.price], ['Phương thức', b.method]]) +
-            '<div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">' +
-            U.btn('Đổi gói', { sm: true, act: 'billing:plan' }) +
-            U.btn('Đổi phương thức', { sm: true, variant: 'ghost', act: 'toast:Mở cổng thanh toán khi phát hành ra ngoài' }) + '</div>'
-        }) +
-        U.card({
-          title: 'Hạn mức đã dùng',
-          body: usage.map(function (r) {
-            return '<div style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;font-size:13px">' +
-              '<span>' + r[0] + '</span><span class="gm-num gm-secondary">' + r[1] + ' / ' + r[2] + '</span></div>' +
-              '<span style="display:block;width:100%;height:6px;border-radius:3px;background:var(--border);overflow:hidden;margin-top:6px">' +
-              '<i style="display:block;height:100%;background:var(--accent-dark);width:' + Math.min(100, r[1] / r[2] * 100) + '%"></i></span></div>';
-          }).join('')
-        }) +
-      '</div>' +
-      U.card({
-        title: 'Lịch sử hóa đơn', cls: 'gm-card-tablewrap',
-        body: U.table({
-          cols: [{ k: 'id', t: 'Mã hóa đơn' }, { k: 'd', t: 'Ngày' }, { k: 'p', t: 'Gói' },
-            { k: 'a', t: 'Số tiền', cls: 'num' }, { k: 'st', t: 'Trạng thái', r: function (r) { return U.tag(r.st); } },
-            { k: '', t: '', cls: 'col-actions', r: function (r) {
-              return U.iconBtn('download', 'Tải hóa đơn', 'invoice:' + r.id); } }],
-          rows: db.invoices
-        })
-      }) +
-    '</div>';
   };
 
   P.notifications = function (c) {
@@ -1821,7 +1618,7 @@
         'Ký nhận mẫu qua ' + s.logisticsInfo.carrierName, 'truck']);
       (s.contents || []).forEach(function (x) {
         timeline.push([x.publishedAt, S.tsShort(x.publishedAt), 'Đăng ' + (x.type === 'LIVE' ? 'LIVE' : 'video') + ' · ' +
-          S.money(x.views) + ' lượt xem · ' + x.orders + ' đơn', 'play']);
+          S.short(x.views) + ' lượt xem · ' + x.orders + ' đơn', 'play']);
       });
     });
     db.campaigns.filter(function (cp) { return cp.shopId === shopId && cp.sent; }).forEach(function (cp) {
@@ -1840,14 +1637,14 @@
         U.tag(r.state) + U.iconBtn('x', 'Đóng', 'drawer:close') + '</header>' +
       '<div class="scroll">' +
         U.stats([
-          { v: S.money(cr.followers), l: 'Follower' }, { v: S.money(cr.gmv30), l: 'GMV 30 ngày' },
+          { v: S.short(cr.followers), l: 'Follower' }, { v: S.money(cr.gmv30), l: 'GMV 30 ngày' },
           { v: cr.postRate + '%', l: 'Tỉ lệ đăng' }, { v: S.money(cr.gpm), l: 'GPM' }
         ]) +
         U.card({
           title: 'Chỉ số chi tiết',
           body: U.kv([
             ['Hạng mục', TT.catL1Name(cr.cat2) + ' › ' + cr.cat],
-            ['Loại nội dung', ctype(cr)], ['Lượt xem TB/video', S.money(cr.avgViews)],
+            ['Loại nội dung', ctype(cr)], ['Lượt xem TB/video', S.short(cr.avgViews)],
             ['Người xem TB/live', S.num(cr.liveViewers)], ['Số món bán 30 ngày', S.num(cr.unitsSold)],
             ['Tỷ lệ tương tác', S.pct(cr.engagement)],
             ['Hoa hồng trung bình', cr.avgCommission + '%'],
@@ -1879,13 +1676,13 @@
             }).join('') + '</div>' : '')
         }) +
         U.card({
-          title: 'Nhãn và ghi chú nội bộ',
+          title: 'Tag và ghi chú nội bộ',
           body: '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">' +
             (r.tags.length ? r.tags.map(function (tid) {
               var t = S.tag(tid);
               return t ? '<span class="gm-chip">' + U.esc(t.name) + '<button data-do="untag:' + cr.id + ':' + tid + '">' + ic('x') + '</button></span>' : '';
-            }).join('') : '<span class="gm-muted">Chưa gắn nhãn</span>') +
-            U.btn('Gắn nhãn', { sm: true, variant: 'ghost', icon: 'plus', act: 'tagpick:' + cr.id }) + '</div>' +
+            }).join('') : '<span class="gm-muted">Chưa gắn tag</span>') +
+            U.btn('Gắn tag', { sm: true, variant: 'ghost', icon: 'plus', act: 'tagpick:' + cr.id }) + '</div>' +
             U.textarea({ ph: 'Ghi chú nội bộ, chỉ nhóm nhìn thấy…', rows: 3, value: r.note, bind: 'note.' + cr.id }) +
             '<div style="margin-top:12px">' + U.field('Người phụ trách',
               U.select(r.owner, { pick: 'owner:' + cr.id, opts: ['user01', 'Lê Quốc Huy', 'Ngô Thảo Vy'] })) + '</div>'
@@ -1901,46 +1698,25 @@
 
   /* ============================================================ trang công khai */
   function pubNav(lang) {
+    var vi = lang !== 'en';
     return '<nav class="ig-pub-nav"><a class="ig-brand" href="#/">' + U.logo() + '</a>' +
+      '<span class="links"><a href="#/">' + (vi ? 'Tính năng' : 'Features') + '</a>' +
+      '<a href="#/pricing">' + (vi ? 'Bảng giá' : 'Pricing') + '</a>' +
+      '<a href="#/privacy">' + (vi ? 'Bảo mật' : 'Privacy') + '</a></span>' +
       '<span class="spacer"></span>' +
-      '<a href="#/privacy">' + (lang === 'en' ? 'Privacy' : 'Bảo mật') + '</a>' +
-      '<a href="#/terms">' + (lang === 'en' ? 'Terms' : 'Điều khoản') + '</a>' +
-      '<a class="gm-btn gm-btn-sm" href="#/login" style="text-decoration:none">' + (lang === 'en' ? 'Sign in' : 'Đăng nhập') + '</a>' +
-      '<a class="gm-btn gm-btn-sm gm-btn-primary" href="#/home" style="text-decoration:none">' +
-      (lang === 'en' ? 'Open the app' : 'Vào ứng dụng') + '</a></nav>';
+      '<label class="ig-au-sel">' + ic('globe') + '<select data-aulang aria-label="Language">' + window.I18N.LANGS.map(function (o) {
+        return '<option value="' + o.v + '"' + (o.v === lang ? ' selected' : '') + '>' + o.s + '</option>'; }).join('') + '</select>' + ic('down') + '</label>' +
+      (window.AUTH && window.AUTH.user()
+        ? '<a class="gm-btn gm-btn-sm gm-btn-primary" href="#/home" style="text-decoration:none">' + (lang !== 'en' ? 'Vào ứng dụng' : 'Open the app') + '</a>'
+        : '<a class="gm-btn gm-btn-sm" href="#/login" style="text-decoration:none">' + window.I18N.nav('Đăng nhập', 'Sign in', lang) + '</a>' +
+          '<a class="gm-btn gm-btn-sm gm-btn-primary" href="#/signup" style="text-decoration:none">' + window.I18N.nav('Đăng ký', 'Sign up', lang) + '</a>') + '</nav>';
   }
   function pubFoot() {
+    if (P.pubFoot) return P.pubFoot();
     return '<footer class="ig-pub-foot"><div class="ig-wrap"><span>© 2026 GoMax Digital</span>' +
       '<a href="#/privacy">Chính sách bảo mật</a><a href="#/terms">Điều khoản sử dụng</a>' +
       '<span style="flex:1"></span><span>GOPUSH v0.2</span></div></footer>';
   }
-
-  P.landing = function (c) {
-    return '<div class="ig-public">' + pubNav(c.lang) +
-      '<div class="ig-wrap"><section class="ig-hero">' +
-        '<div class="ig-hero-mark">' + U.logo(null, true) + '</div>' +
-        '<h1>Quản lý affiliate Creator cho TikTok Shop</h1>' +
-        '<p>Kết nối với shop qua API chính thức (ISV) thay vì cookie hay RPA. Tìm Creator, mời hàng loạt, duyệt hàng mẫu, theo vận đơn và đo GMV — tất cả trong một nơi.</p>' +
-        '<div class="cta"><a class="gm-btn gm-btn-primary" href="#/signup" style="text-decoration:none">Dùng thử</a>' +
-        '<a class="gm-btn" href="#/home" style="text-decoration:none">Xem bản demo</a></div>' +
-      '</section>' +
-      '<section class="ig-features">' + [
-        ['shield', 'Chính thức', 'Mọi thao tác đi qua API được cấp quyền. Mỗi shop cấp quyền OAuth riêng, có hạn dùng và nhật ký.'],
-        ['store', 'Theo shop', 'Chọn shop ở đầu trang; mọi dữ liệu và thao tác gắn với shop đó. Tổng quan và báo cáo xem gộp được.'],
-        ['team', 'Theo nhóm', 'Tài khoản chính, tài khoản con, phân quyền theo vai trò và theo shop.'],
-        ['lock', 'An toàn cho shop', 'Giới hạn gửi mỗi ngày, giãn cách, blacklist mặc định và nhật ký mọi thao tác.']
-      ].map(function (f) {
-        return '<article class="ig-feature">' + ic(f[0]) + '<h3>' + f[1] + '</h3><p>' + f[2] + '</p></article>';
-      }).join('') + '</section>' +
-      '<section style="padding-bottom:32px"><h2 style="font-size:16px;margin:0 0 12px">Luồng người dùng chính</h2>' +
-        '<div class="ig-flow">' + [
-          ['Bước 1', 'Đăng ký và ủy quyền shop'], ['Bước 2', 'Tìm Creator và lưu vào Kho'],
-          ['Bước 3', 'Lời mời / nhắn tin hàng loạt'], ['Bước 4', 'Duyệt hàng mẫu'],
-          ['Bước 5', 'Theo dõi vận đơn'], ['Bước 6', 'Báo cáo GMV, hoa hồng']
-        ].map(function (s) { return '<div class="s"><b>' + s[0] + '</b>' + s[1] + '</div>'; }).join('') + '</div>' +
-        '<p class="gm-help" style="margin-top:12px">Tự động hóa thay người dùng lặp lại bước 3 và nhắc Creator ở bước 5.</p>' +
-      '</section></div>' + pubFoot() + '</div>';
-  };
 
   function gLogo() {
     return '<svg class="ig-gsvg" viewBox="0 0 48 48" aria-hidden="true">' +
@@ -1950,52 +1726,6 @@
       '<path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>' +
       '</svg>';
   }
-
-  function authPage(o) {
-    return '<div class="ig-auth-split">' +
-      '<aside class="ig-auth-art">' +
-        '<img src="' + U.img('auth.png') + '" alt="Lời mời hợp tác gửi tới Creator trên TikTok Shop">' +
-        '<div class="cap"><h2>Mời Creator hợp tác, đo kết quả tới từng đơn</h2>' +
-          '<p>Kết nối shop qua API chính thức, tìm và mời Creator hàng loạt, duyệt hàng mẫu rồi theo GMV về tận nơi — trong một nơi duy nhất.</p>' +
-          '<ul><li>' + ic('shield') + 'API chính thức (ISV)</li><li>' + ic('users') + '4.29 triệu Creator</li>' +
-          '<li>' + ic('lock') + 'An toàn cho shop</li></ul></div>' +
-      '</aside>' +
-      '<main class="ig-auth-pane"><div class="ig-auth-card">' +
-        '<header><a href="#/">' + U.logo(null, true) + '</a>' +
-        '<h1>' + o.title + '</h1><p>' + o.sub + '</p></header>' +
-        '<button class="gm-btn ig-gbtn" data-do="auth:google">' + gLogo() + U.esc(o.google) + '</button>' +
-        '<div class="ig-or">hoặc</div>' + o.body +
-        '<div class="ig-auth-foot">' + o.foot + '</div>' +
-        '<a class="ig-auth-back" href="#/">' + ic('back') + 'Về trang giới thiệu</a>' +
-      '</div></main></div>';
-  }
-
-  P.login = function (c) {
-    return authPage({
-      title: 'Đăng nhập', sub: 'Dùng tài khoản GoMax của bạn', google: 'Đăng nhập bằng Google',
-      body: U.field('Email', U.input({ ph: 'ten@congty.vn', icon: 'mail', value: S.data.settings.profile.email })) +
-        U.field('Mật khẩu', U.input({ type: 'password', ph: '••••••••', icon: 'lock', value: '12345678' })) +
-        '<div class="ig-auth-row"><label style="display:flex;align-items:center;gap:8px;cursor:pointer">' +
-        '<span class="gm-check on"></span>Ghi nhớ đăng nhập</label>' +
-        '<a class="gm-link" data-do="toast:Đã gửi liên kết đặt lại mật khẩu">Quên mật khẩu?</a></div>' +
-        '<a class="gm-btn gm-btn-primary" href="#/home" style="text-decoration:none">Đăng nhập</a>',
-      foot: 'Chưa có tài khoản? <a class="gm-link" href="#/signup">Đăng ký</a>'
-    });
-  };
-
-  P.signup = function (c) {
-    return authPage({
-      title: 'Tạo tài khoản', sub: 'Onboarding 3 bước: tạo tài khoản → ủy quyền shop đầu tiên → mời thành viên',
-      google: 'Đăng ký bằng Google',
-      body: U.steps(['Tài khoản', 'Ủy quyền shop', 'Mời thành viên'], 0) +
-        U.field('Tên hiển thị', U.input({ ph: 'user01' })) +
-        U.field('Email công việc', U.input({ ph: 'ten@congty.vn', icon: 'mail' })) +
-        U.field('Mật khẩu', U.input({ type: 'password', ph: 'Ít nhất 8 ký tự', icon: 'lock' })) +
-        '<p class="gm-help" style="margin:0">Bấm Tiếp tục là bạn đồng ý với <a class="gm-link" href="#/terms">Điều khoản sử dụng</a> và <a class="gm-link" href="#/privacy">Chính sách bảo mật</a>.</p>' +
-        '<a class="gm-btn gm-btn-primary" href="#/shops" style="text-decoration:none">Tiếp tục: ủy quyền shop</a>',
-      foot: 'Đã có tài khoản? <a class="gm-link" href="#/login">Đăng nhập</a>'
-    });
-  };
 
   function doc(c, title, sections) {
     return '<div class="ig-public">' + pubNav(c.lang) +
@@ -2015,7 +1745,7 @@
       ['3. Chia sẻ dữ liệu', 'GOPUSH không bán dữ liệu. Dữ liệu chỉ hiển thị cho thành viên trong nhóm được phân quyền trên cửa hàng tương ứng.'],
       ['4. Lưu trữ và xóa', 'Dữ liệu Creator sao lưu trong database của GOPUSH theo thời hạn quy định tại điều khoản dữ liệu của TikTok Shop Partner. Người dùng có thể yêu cầu xóa toàn bộ dữ liệu của mình bất kỳ lúc nào.'],
       ['5. Bảo mật', 'Kết nối mã hóa TLS, token OAuth lưu ở dạng mã hóa, bật bảo mật 2 lớp cho tài khoản, ghi nhật ký mọi thao tác tác động tới shop.'],
-      ['6. Liên hệ', 'Mọi câu hỏi về quyền riêng tư: privacy@gomax.vn.']
+      ['6. Liên hệ', 'Mọi câu hỏi về quyền riêng tư: contact@gopush.asia.']
     ]);
   };
 
@@ -2052,7 +1782,9 @@
     db.shops.forEach(function (sh) {
       if (!inScope(scope, sh.id)) return;
       var st = S.stats(sh.id), q = S.quota(sh.id);
-      if (sh.status === 'err') add({ key: 'auth-' + sh.id, sev: 4, icon: 'alert', kind: 'Ủy quyền', shopId: sh.id,
+      var unlinked = global.AUTH && !global.AUTH.linked();
+      if (unlinked) { /* chưa liên kết: khối nhắc trên Trang chủ đã lo, không báo "hết hạn" */ }
+      else if (sh.status === 'err') add({ key: 'auth-' + sh.id, sev: 4, icon: 'alert', kind: 'Ủy quyền', shopId: sh.id,
         title: sh.name + ' đã hết hạn ủy quyền', sub: 'Dừng đồng bộ và gửi cho tới khi ủy quyền lại', due: 'Ngay',
         cta: 'Ủy quyền lại', go: '/shops/' + sh.id });
       else if (sh.status === 'warn') add({ key: 'auth-' + sh.id, sev: 2, icon: 'alert', kind: 'Ủy quyền', shopId: sh.id,
@@ -2163,9 +1895,14 @@
   }
   P.campSamples = campSamples;
   P.campMembers = campMembers;
+  P.creatorRows = creatorRows;
+  P.campFunnel = function (cp) { return campFunnel(cp); };
 
+  /* tỉ lệ từng bước khác nhau theo chiến dịch (ổn định theo tên), để so sánh giữa các đợt có ý nghĩa */
   function campFunnel(cp) {
-    var req = Math.round(cp.accepted * 0.58), got = Math.round(req * 0.72), vid = Math.round(got * 0.66), ord = Math.round(vid * 0.79);
+    function h(k) { var s = 0, t = cp.name + k; for (var i = 0; i < t.length; i++) s = (s * 31 + t.charCodeAt(i)) % 9973; return s / 9973; }
+    var req = Math.round(cp.accepted * (0.42 + 0.3 * h('r'))), got = Math.round(req * (0.6 + 0.32 * h('g')));
+    var vid = Math.round(got * (0.36 + 0.52 * h('v'))), ord = Math.round(vid * (0.55 + 0.4 * h('o')));
     return [{ l: 'Đã gửi', v: cp.sent, tab: 0 }, { l: 'Chấp nhận', v: cp.accepted, tab: 0, f: 'acc' },
       { l: 'Xin mẫu', v: req, tab: 1 }, { l: 'Nhận mẫu', v: got, tab: 1, f: 'got' },
       { l: 'Lên video/live', v: vid, tab: 2 }, { l: 'Có đơn', v: ord, tab: 3 }];
@@ -2222,7 +1959,7 @@
           { k: '', t: 'Creator', r: function (r) { return U.creatorCell(r.cr); } },
           { k: '', t: 'Phản hồi', r: function (r) { return U.tag(r.st); } },
           { k: '', t: 'Hàng mẫu', r: function (r) { return r.sm ? U.tag(S.sampleLabel(r.sm.status)) : '<span class="gm-muted">—</span>'; } },
-          { k: '', t: 'Follower', cls: 'num', r: function (r) { return S.money(r.followers); } },
+          { k: '', t: 'Follower', cls: 'num', r: function (r) { return S.short(r.followers); } },
           { k: '', t: 'GMV 30 ngày', cls: 'num', r: function (r) { return S.money(r.gmv); } },
           { k: '', t: '', cls: 'col-actions', r: function (r) {
             return U.iconBtn('msgSend', 'Nhắn tin', 'message:' + r.id) + U.btn('Hồ sơ', { sm: true, act: 'creator:' + r.id }); } }
@@ -2241,7 +1978,7 @@
           return '<div class="ig-inbox-t">' + chip(o.x.type === 'LIVE' ? 4 : 0, o.x.type === 'LIVE' ? 'video' : 'play') +
             '<div><b>' + U.esc(o.x.title) + '</b><span>@' + U.esc(o.s.creatorInfo.username) + ' · ' + S.tsShort(o.x.publishedAt) + '</span></div></div>'; } },
         { k: '', t: 'Loại', r: function (o) { return o.x.type === 'LIVE' ? 'LIVE' : 'Video'; } },
-        { k: '', t: 'Lượt xem', cls: 'num', r: function (o) { return S.money(o.x.views); } },
+        { k: '', t: 'Lượt xem', cls: 'num', r: function (o) { return S.short(o.x.views); } },
         { k: '', t: 'Đơn', cls: 'num', r: function (o) { return S.num(o.x.orders); } },
         { k: '', t: 'GMV', cls: 'num', r: function (o) { return S.money(o.x.gmv); } },
         { k: '', t: '', cls: 'col-actions', r: function (o) {
@@ -2254,7 +1991,7 @@
       var top = Object.keys(byCr).sort(function (a, b) { return byCr[b] - byCr[a]; }).slice(0, 6);
       body = '<div class="ig-section">' +
         '<div class="ig-kpis ig-kpis-4">' +
-          kpi({ i: 'trend', l: 'GMV từ nội dung (₫)', v: S.money(gmv), d: '+' + contents.length + ' nội dung', s: series(gmv || 1) }) +
+          kpi({ i: 'trend', l: 'GMV từ nội dung (' + S.cur() + ')', v: S.money(gmv), d: '+' + contents.length + ' nội dung', s: series(gmv || 1) }) +
           kpi({ i: 'box', l: 'Đơn hàng', v: S.num(orders), d: '+' + orders, s: series(orders || 1) }) +
           kpi({ i: 'check', l: 'Tỉ lệ chấp nhận', v: cp.sent ? Math.round(cp.accepted / cp.sent * 100) + '%' : '—', d: '+0', s: series(cp.accepted || 1) }) +
           kpi({ i: 'send', l: 'Tiến độ gửi', v: p + '%', d: '+' + cp.sent, s: series(cp.sent || 1) }) +
@@ -2292,7 +2029,9 @@
   /* ============================================================ panel GOPUSH AI */
   P.aiPanel = function (x) {
     var db = S.data;
-    var chat = db.chat.length ? db.chat.map(function (m) { return m.role === 'me' ? msgUser(m.text) : msgAi(m.html); }).join('')
+    var chat = db.chat.length ? db.chat.map(function (m) {
+        return m.role === 'me' ? msgUser(m.text) : (m.pending || m.html == null ? msgAi('<p class="gm-muted">Đang đọc dữ liệu…</p>', true) : msgAi(m.html));
+      }).join('')
       : msgAi('<p>Chào <b>' + U.esc(db.settings.profile.name) + '</b>. Mình đọc được dữ liệu của trang <b>' + U.esc(x.page) +
           '</b> trong phạm vi <b>' + U.esc(x.scope) + '</b>. Hỏi bất cứ điều gì, hoặc chọn một gợi ý bên dưới.</p>', true);
     var ctx = '<span class="gm-tag">' + ic('file') + U.esc(x.page) + '</span>' +
@@ -2315,6 +2054,8 @@
   };
 
   P.aiAnswer = aiAnswer;
+  P.gLogo = gLogo;
+  P.pubNav = pubNav;
   P.sampleActions = sampleActions;
   global.PAGES = P;
 })(window);

@@ -13,7 +13,9 @@
     if (t.indexOf('.') > -1) t = t.replace(/0+$/, '').replace(/\.$/, '');
     return t.replace('.', ',');
   }
+  /* nhãn trục theo ngôn ngữ và định dạng số của thị trường đang chọn (store.js); dự phòng kiểu Việt */
   function nice(n) {
+    if (global.DB && global.DB.short) return global.DB.short(n);
     if (n >= 1e9) return dec(n / 1e9, n >= 1e10 ? 1 : 2) + ' tỷ';
     if (n >= 1e6) return dec(n / 1e6, n >= 1e7 ? 0 : 1) + 'tr';
     if (n >= 1e3) return dec(n / 1e3, n >= 1e4 ? 0 : 1) + 'K';

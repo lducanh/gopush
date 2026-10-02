@@ -5,7 +5,16 @@
 (function (global) {
   'use strict';
 
-  var KEY = 'gopush.db.v7';
+  /* thị trường (site) đang chọn: mỗi thị trường một kho dữ liệu riêng */
+  var MK = global.MARKETS;
+  var M = MK.get((function () { try { return localStorage.getItem('gopush.market'); } catch (e) { return null; } })() || 'VN');
+  /* kho theo thị trường và theo tài khoản: mỗi người dùng một bộ dữ liệu riêng */
+  var UID = '';
+  function keyOf() { return 'gopush.db.v8.' + M.code + (UID ? '.' + UID : ''); }
+  var KEY = keyOf();
+  /* gọi sau khi sinh dữ liệu mới, để cắt theo gói của tài khoản (plans.js gắn vào) */
+  var SEED_HOOK = null;
+  var LANG = (function () { try { return localStorage.getItem('gopush.lang') || 'vi'; } catch (e) { return 'vi'; } })();
 
   /* ---------------------------------------------------------- tiện ích */
   var seedNum = 20260924;
@@ -14,33 +23,91 @@
   function intBetween(a, b) { return a + Math.floor(rnd() * (b - a + 1)); }
   function uid(p) { return p + '-' + Math.random().toString(36).slice(2, 9); }
 
-  function today() { return new Date(2026, 8, 24, 11, 30); }
+  /* mọi mốc thời gian trong dữ liệu mẫu tính lùi từ ngày giờ thật, để bản demo luôn "mới" */
+  function today() { return new Date(); }
   function pad(n) { return n < 10 ? '0' + n : String(n); }
-  function fmtDate(d) { return pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + '/' + d.getFullYear(); }
-  function fmtDateTime(d) { return pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()); }
+  /* ngày giờ theo thói quen từng thị trường: Hoa Kỳ tháng/ngày và giờ 12h, Nhật năm/tháng/ngày, còn lại ngày/tháng/năm */
+  function dfmt() { return M.code === 'US' ? 'mdy' : M.code === 'JP' ? 'ymd' : 'dmy'; }
+  function fmtDate(d) {
+    var dd = pad(d.getDate()), mm = pad(d.getMonth() + 1), y = d.getFullYear(), f = dfmt();
+    return f === 'mdy' ? mm + '/' + dd + '/' + y : f === 'ymd' ? y + '/' + mm + '/' + dd : dd + '/' + mm + '/' + y;
+  }
+  function fmtDM(d) { return dfmt() === 'dmy' ? pad(d.getDate()) + '/' + pad(d.getMonth() + 1) : pad(d.getMonth() + 1) + '/' + pad(d.getDate()); }
+  function fmtTime(d) {
+    if (M.code !== 'US') return pad(d.getHours()) + ':' + pad(d.getMinutes());
+    var h = d.getHours() % 12 || 12; return h + ':' + pad(d.getMinutes()) + (d.getHours() < 12 ? ' AM' : ' PM');
+  }
+  function fmtDateTime(d) { return fmtDM(d) + ' ' + fmtTime(d); }
+  /* múi giờ của thị trường, lấy từ nhãn "(UTC+7) …" */
+  function tzLabel() { var m = /\(UTC[^)]*\)/.exec(M.tz || ''); return m ? m[0] : '(UTC+7)'; }
   function daysAgo(n) { var d = today(); d.setDate(d.getDate() - n); return d; }
   function now() { return new Date().toISOString(); }
+  /* dd/mm/yyyy của n ngày trước (n âm = n ngày sau) */
+  function dateAgo(n) { return fmtDate(daysAgo(n)); }
+  /* dd/mm hh:mm của n ngày trước, giờ cố định */
+  function at(n, h, m) { var d = daysAgo(n); d.setHours(h, m || 0, 0, 0); return fmtDateTime(d); }
+  /* mốc cách đây `mins` phút: "Hôm nay 09:05", "Hôm qua 22:40" hoặc "dd/mm hh:mm" */
+  function relTime(mins) {
+    var d = today(); d.setMinutes(d.getMinutes() - mins);
+    var t = today(); t.setHours(0, 0, 0, 0);
+    var hm = fmtTime(d);
+    if (d >= t) return 'Hôm nay ' + hm;
+    t.setDate(t.getDate() - 1);
+    return d >= t ? 'Hôm qua ' + hm : fmtDateTime(d);
+  }
+  /* "tháng 9/2026" của tháng hiện tại + off */
+  function month(off, noYear) { var d = today(); d.setDate(1); d.setMonth(d.getMonth() + (off || 0)); return 'tháng ' + (d.getMonth() + 1) + (noYear ? '' : '/' + d.getFullYear()); }
 
+  /* dấu thập phân theo thị trường: VN, ID, BR dùng dấu phẩy; còn lại dấu chấm */
+  function decSep() { return (1.5).toLocaleString(M.loc).charAt(1); }
   /* bỏ số 0 thừa sau dấu thập phân, không đụng vào phần nguyên */
   function dec(v, d) {
     var t = v.toFixed(d);
     if (t.indexOf('.') > -1) t = t.replace(/0+$/, '').replace(/\.$/, '');
-    return t.replace('.', ',');
+    return t.replace('.', decSep());
   }
 
-  /* rút gọn tiền: K nghìn · tr triệu · tỷ. Ví dụ 1.700.000 → "1,7tr" */
-  function money(n) {
+  /* tiền lưu theo đơn vị gốc (VND); quy đổi sang tiền tệ thị trường khi hiển thị */
+  function fx(n) { return (Number(n) || 0) / M.rate; }
+  function toBase(n) { return (Number(n) || 0) * M.rate; }
+
+  /* rút gọn tiền đã quy đổi. Tiếng Việt: K · tr · tỷ; ngôn ngữ khác: K · M · B. Ví dụ 1.700.000 → "1,7tr" */
+  function money(n) { return short(fx(n)); }
+  /* đơn vị rút gọn theo cách người dùng từng thị trường quen đọc trên TikTok Shop:
+     VN 1,7tr · 2,1 tỷ   ID 1,7 jt · 12 rb   BR 1,7 mi · 12 mil   JP 17万 · 1.2億   còn lại 1.7M · 12K */
+  var SHORT = {
+    VN: [[1e9, ' tỷ'], [1e6, 'tr'], [1e3, 'K']],
+    ID: [[1e9, ' M'], [1e6, ' jt'], [1e3, ' rb']],
+    BR: [[1e9, ' bi'], [1e6, ' mi'], [1e3, ' mil']],
+    JP: [[1e8, '億'], [1e4, '万']],
+    _: [[1e9, 'B'], [1e6, 'M'], [1e3, 'K']]
+  };
+  /* rút gọn số không quy đổi tiền: follower, lượt xem, lượt thích */
+  function short(n) {
     n = Number(n) || 0;
-    if (n >= 1e9) return dec(n / 1e9, n >= 1e10 ? 1 : 2) + ' tỷ';
-    if (n >= 1e6) return dec(n / 1e6, n >= 1e8 ? 0 : 1) + 'tr';
-    if (n >= 1e3) return dec(n / 1e3, n >= 1e5 ? 0 : 1) + 'K';
-    return num(Math.round(n));
+    var neg = n < 0 ? '-' : '', u = SHORT[M.code] || SHORT._; n = Math.abs(n);
+    for (var i = 0; i < u.length; i++) {
+      if (n >= u[i][0]) { var v = n / u[i][0]; return neg + dec(v, v >= 100 ? 0 : (v >= 10 || i ? 1 : 2)) + u[i][1]; }
+    }
+    return neg + (n < 100 && n % 1 ? dec(n, 2) : num(Math.round(n)));
   }
 
-  /* số tiền đầy đủ: 1.234.568 đ */
-  function vnd(n) { return num(Math.round(Number(n) || 0)) + ' đ'; }
-  function num(n) { return Number(n || 0).toLocaleString('vi-VN'); }
-  function pct(n) { return (Math.round(n * 10) / 10).toString().replace('.', ',') + '%'; }
+  /* số tiền đầy đủ kèm ký hiệu tiền tệ: 1.234.568 ₫ · $49.38 */
+  function vnd(n) {
+    var v = fx(n), t = v < 1000 && M.rate >= 1000 ? Number(v).toLocaleString(M.loc, { maximumFractionDigits: 2 }) : num(Math.round(v));
+    return M.code === 'VN' ? t + ' ' + M.cur : M.cur + (M.cur.length > 1 ? ' ' : '') + t;
+  }
+  function num(n) { return Number(n || 0).toLocaleString(M.loc); }
+  function pct(n) { return (Math.round(n * 10) / 10).toString().replace('.', decSep()) + '%'; }
+  function cur() { return M.cur; }
+  /* tiền rút gọn kèm ký hiệu đúng vị trí theo thị trường: 1,7tr ₫ · $6K · R$ 42,61 */
+  function amt(n) { return M.code === 'VN' ? money(n) + ' ' + M.cur : M.cur + (M.cur.length > 1 ? ' ' : '') + money(n); }
+  /* đơn vị trục biểu đồ tiền: nghìn hay triệu tùy độ lớn của tiền tệ */
+  function unit() {
+    if (M.code === 'JP') return { div: 1e4 * M.rate, label: '万' };
+    var big = M.rate >= 300, L = { VN: ['nghìn', 'triệu'], ID: ['rb', 'jt'], BR: ['mil', 'mi'] }[M.code] || ['K', 'M'];
+    return { div: (big ? 1e3 : 1e6) * M.rate, label: big ? L[0] : L[1] };
+  }
 
   /* ---------------------------------------------------------- nguồn sinh dữ liệu */
   var HO = ['Nguyễn', 'Trần', 'Lê', 'Phạm', 'Hoàng', 'Huỳnh', 'Phan', 'Vũ', 'Võ', 'Đặng', 'Bùi', 'Đỗ', 'Hồ', 'Ngô', 'Dương', 'Lý'];
@@ -66,20 +133,21 @@
 
   /* ---------------------------------------------------------- sinh dữ liệu ban đầu */
   function seed() {
-    var db = { v: 1, createdAt: now() };
+    seedNum = 20260924;
+    var db = { v: 1, createdAt: now(), market: M.code };
 
     db.shops = [
       { id: 'vn-1300s', flag: '🇻🇳', name: "VN 1300'S Coffee", country: 'Việt Nam', cur: '₫', status: 'ok',
-        expires: '18/12/2026', sync: 'Hôm nay 11:20', owner: 'user01',
+        expires: dateAgo(-85), sync: relTime(10), owner: 'user01',
         inviteLimit: 10000, soft: 4000, used: 0, gap: '45 – 90 giây' },
       { id: 'vn-lumi', flag: '🇻🇳', name: 'VN Lumi Skin', country: 'Việt Nam', cur: '₫', status: 'warn',
-        expires: '02/10/2026', sync: 'Hôm nay 09:05', owner: 'Lê Quốc Huy',
+        expires: dateAgo(-8), sync: relTime(145), owner: 'Lê Quốc Huy',
         inviteLimit: 10000, soft: 2000, used: 0, gap: '60 – 120 giây' },
-      { id: 'th-nara', flag: '🇹🇭', name: 'TH Nara Home', country: 'Thái Lan', cur: '฿', status: 'ok',
-        expires: '04/03/2027', sync: 'Hôm qua 22:40', owner: 'Ngô Thảo Vy',
+      { id: 'th-nara', flag: '🇻🇳', name: 'VN Nara Home', country: 'Việt Nam', cur: '₫', status: 'ok',
+        expires: dateAgo(-161), sync: relTime(1490), owner: 'Ngô Thảo Vy',
         inviteLimit: 10000, soft: 3000, used: 0, gap: '45 – 90 giây' },
-      { id: 'my-kaya', flag: '🇲🇾', name: 'MY Kaya Living', country: 'Malaysia', cur: 'RM', status: 'err',
-        expires: 'Đã hết hạn', sync: '21/09/2026', owner: 'Chưa giao',
+      { id: 'my-kaya', flag: '🇻🇳', name: 'VN Kaya Living', country: 'Việt Nam', cur: '₫', status: 'err',
+        expires: 'Đã hết hạn', sync: dateAgo(3), owner: 'Chưa giao',
         inviteLimit: 0, soft: 0, used: 0, gap: '—' }
     ];
 
@@ -130,12 +198,14 @@
       while (used[u]) u = base + intBetween(1, 999) + '.' + pick(SLUG);
       used[u] = 1;
 
-      var fol = intBetween(8, 640) * 1000;
+      /* khoảng 4% Creator trên 1 triệu follower (nhóm Mega), còn lại 8K–640K */
+      var fol = rnd() > 0.96 ? intBetween(1000, 3200) * 1000 : intBetween(8, 640) * 1000;
       var rate = intBetween(18, 82);
       var avgViews = intBetween(3, 90) * 1000;
       /* GMV 30 ngày ước theo lượng xem và tỉ lệ đăng, không theo follower thô */
       var gmv = Math.round(avgViews * 20 * (rate / 100) * intBetween(40, 300));
-      var unitsSold = intBetween(4, 2400);
+      /* số món bán khớp GMV: chia cho giá trung bình mỗi món 90K–260K */
+      var unitsSold = Math.max(4, Math.round(gmv / intBetween(90000, 260000)));
       var content = rnd() > 0.34 ? 1 : 2;              /* content_label */
       var engagement = intBetween(15, 120) / 10;        /* % */
       var cat2 = pick(L2);
@@ -178,7 +248,7 @@
         /* --- trường riêng của GOPUSH --- */
         gpm: Math.round(gmv / Math.max(1, avgViews * 20 / 1000)),
         postRate: rate,
-        country: rnd() > 0.2 ? 'Việt Nam' : pick(['Thái Lan', 'Malaysia']),
+        country: 'Việt Nam',
         region: pick(REGIONS),
         promoting: intBetween(1, 24),
         contact: rnd() > 0.3,
@@ -208,9 +278,9 @@
 
     /* blacklist */
     db.blacklist = [
-      { id: uid('b'), shopId: 'vn-1300s', creatorId: db.creators[70].id, reason: 'Nội dung sai sự thật về sản phẩm', by: 'user01', at: '18/09/2026' },
-      { id: uid('b'), shopId: 'vn-1300s', creatorId: db.creators[71].id, reason: 'Spam tin nhắn, không hợp tác', by: 'Lê Quốc Huy', at: '11/09/2026' },
-      { id: uid('b'), shopId: 'vn-lumi', creatorId: db.creators[72].id, reason: 'Bán lại hàng mẫu', by: 'user01', at: '02/09/2026' }
+      { id: uid('b'), shopId: 'vn-1300s', creatorId: db.creators[70].id, reason: 'Nội dung sai sự thật về sản phẩm', by: 'user01', at: dateAgo(6) },
+      { id: uid('b'), shopId: 'vn-1300s', creatorId: db.creators[71].id, reason: 'Spam tin nhắn, không hợp tác', by: 'Lê Quốc Huy', at: dateAgo(13) },
+      { id: uid('b'), shopId: 'vn-lumi', creatorId: db.creators[72].id, reason: 'Bán lại hàng mẫu', by: 'user01', at: dateAgo(22) }
     ];
 
     /* mẫu */
@@ -246,7 +316,7 @@
         templateId: tpl, gap: '60 giây', perRun: 50, products: [], note: '' };
     }
     db.campaigns = [
-      camp('vn-1300s', 'invite', 'Mời Creator F&B tháng 9', 'Đang chạy', 420, 600, 160, 'user01', 0, 'ti1', 21, 9),
+      camp('vn-1300s', 'invite', 'Mời Creator F&B ' + month(0, true), 'Đang chạy', 420, 600, 160, 'user01', 0, 'ti1', 21, 9),
       camp('vn-1300s', 'invite', 'Ra mắt Cold Brew 250ml', 'Đang chạy', 180, 180, 74, 'Lê Quốc Huy', 2, 'ti3', 2, 6),
       camp('vn-1300s', 'invite', 'Mời lại Creator chưa phản hồi', 'Tạm dừng', 96, 320, 12, 'user01', 4, 'ti4', 3, 4),
       camp('vn-1300s', 'invite', 'Chiến dịch Tết 2027', 'Nháp', 0, 0, 0, 'Ngô Thảo Vy', 5, 'ti3', 90, 0),
@@ -254,11 +324,11 @@
       camp('vn-1300s', 'invite', 'Mời Creator Live chuyên sâu', 'Lỗi', 38, 200, 0, 'user01', 13, 'ti1', 1, 5),
       camp('vn-1300s', 'invite', 'Mời Creator Mẹ và Bé', 'Đang chạy', 50, 50, 21, 'Ngô Thảo Vy', 6, 'ti2', 12, 7),
       camp('vn-1300s', 'invite', 'Mời Creator Nhà cửa', 'Đang chạy', 50, 50, 8, 'user01', 9, 'ti1', 3, 3),
-      camp('vn-lumi', 'invite', 'Mời Creator Beauty tháng 9', 'Đang chạy', 140, 260, 58, 'Lê Quốc Huy', 1, 'ti3', 18, 8),
+      camp('vn-lumi', 'invite', 'Mời Creator Beauty ' + month(0, true), 'Đang chạy', 140, 260, 58, 'Lê Quốc Huy', 1, 'ti3', 18, 8),
       camp('th-nara', 'invite', 'Mời Creator Gia dụng TH', 'Hoàn thành', 190, 190, 84, 'Ngô Thảo Vy', 8, 'ti2', 40, 10),
       camp('vn-1300s', 'message', 'Nhắc Creator đã nhận mẫu', 'Đang chạy', 128, 210, 0, 'user01', 0, 'tm2'),
       camp('vn-1300s', 'message', 'Gửi thẻ SP Cold Brew', 'Hoàn thành', 96, 96, 0, 'Lê Quốc Huy', 3, 'tm3'),
-      camp('vn-1300s', 'message', 'Ảnh bộ ấn phẩm tháng 10', 'Nháp', 0, 0, 0, 'Ngô Thảo Vy', 4, 'tm1'),
+      camp('vn-1300s', 'message', 'Ảnh bộ ấn phẩm ' + month(1, true), 'Nháp', 0, 0, 0, 'Ngô Thảo Vy', 4, 'tm1'),
       camp('vn-1300s', 'message', 'Cảm ơn Creator có đơn đầu tiên', 'Tạm dừng', 44, 120, 0, 'user01', 6, 'tm4'),
       camp('vn-lumi', 'message', 'Nhắc lên video – Lumi', 'Đang chạy', 60, 130, 0, 'Lê Quốc Huy', 1, 'tm2')
     ];
@@ -350,7 +420,7 @@
         sku: pr.sku, productKey: pr.id,
         commissionRate: pr.com,
         fulfillmentPercentage: String(cr.postRate),
-        gmvCount: num(cr.gmv30), gmvCurrency: shop === 'th-nara' ? 'THB' : 'VND',
+        gmvCount: String(cr.gmv30), gmvCurrency: 'VND',
         ecVideoView: cr.avgViews, avgEcLiveUv: cr.liveViewers,
         sampleType: rnd() > 0.86 ? 'REFUNDABLE' : 'FREE',
         approvalMethod: rnd() > 0.72 ? 'AUTO' : 'MANUAL',
@@ -432,50 +502,50 @@
     /* tự động hóa */
     db.autoInvites = [
       { id: uid('ai'), shopId: 'vn-1300s', name: 'Mời Creator F&B > 100K follower', filter: 'F&B · 100K+ · có liên hệ',
-        templateId: 'ti1', schedule: '08:00 hằng ngày', limit: 50, on: true, last: 'Hôm nay 08:00 · 47 mời · 0 lỗi', runs: 128 },
+        templateId: 'ti1', schedule: '08:00 hằng ngày', limit: 50, on: true, last: relTime(210) + ' · 47 mời · 0 lỗi', runs: 128 },
       { id: uid('ai'), shopId: 'vn-1300s', name: 'Mời Creator Live mới nổi', filter: 'Live · GMV 30 ngày > 100tr',
-        templateId: 'ti4', schedule: '14:00 hằng ngày', limit: 30, on: true, last: 'Hôm nay 14:00 · 28 mời · 2 lỗi', runs: 86 },
+        templateId: 'ti4', schedule: '14:00 hằng ngày', limit: 30, on: true, last: relTime(1290) + ' · 28 mời · 2 lỗi', runs: 86 },
       { id: uid('ai'), shopId: 'vn-1300s', name: 'Mời Creator Gia dụng', filter: 'Gia dụng · 50K+',
-        templateId: 'ti2', schedule: '09:00 thứ 2, 5', limit: 40, on: false, last: '19/09 09:00 · 36 mời · 0 lỗi', runs: 41 },
+        templateId: 'ti2', schedule: '09:00 thứ 2, 5', limit: 40, on: false, last: at(5, 9) + ' · 36 mời · 0 lỗi', runs: 41 },
       { id: uid('ai'), shopId: 'vn-lumi', name: 'Mời Creator Beauty', filter: 'Beauty · 80K+',
-        templateId: 'ti3', schedule: '10:00 hằng ngày', limit: 35, on: true, last: 'Hôm nay 10:00 · 31 mời · 1 lỗi', runs: 54 }
+        templateId: 'ti3', schedule: '10:00 hằng ngày', limit: 35, on: true, last: relTime(90) + ' · 31 mời · 1 lỗi', runs: 54 }
     ];
     db.autoMessages = [
-      { id: uid('am'), shopId: 'vn-1300s', when: 'Creator chấp nhận lời mời', templateId: 'tm1', on: true, last: 'Hôm nay 11:42 · 18 tin' },
-      { id: uid('am'), shopId: 'vn-1300s', when: 'Creator xin hàng mẫu', templateId: 'tm3', on: true, last: 'Hôm nay 10:05 · 6 tin' },
-      { id: uid('am'), shopId: 'vn-1300s', when: 'Mẫu đã duyệt', templateId: 'tm1', on: false, last: '22/09 · 12 tin' },
-      { id: uid('am'), shopId: 'vn-1300s', when: 'Vận đơn giao xong 5 ngày chưa có video', templateId: 'tm2', on: true, last: 'Hôm nay 09:00 · 9 tin' },
-      { id: uid('am'), shopId: 'vn-1300s', when: 'Creator có đơn đầu tiên', templateId: 'tm4', on: true, last: 'Hôm nay 12:10 · 4 tin' }
+      { id: uid('am'), shopId: 'vn-1300s', when: 'Creator chấp nhận lời mời', templateId: 'tm1', on: true, last: relTime(12) + ' · 18 tin' },
+      { id: uid('am'), shopId: 'vn-1300s', when: 'Creator xin hàng mẫu', templateId: 'tm3', on: true, last: relTime(85) + ' · 6 tin' },
+      { id: uid('am'), shopId: 'vn-1300s', when: 'Mẫu đã duyệt', templateId: 'tm1', on: false, last: fmtDM(daysAgo(2)) + ' · 12 tin' },
+      { id: uid('am'), shopId: 'vn-1300s', when: 'Vận đơn giao xong 5 ngày chưa có video', templateId: 'tm2', on: true, last: relTime(150) + ' · 9 tin' },
+      { id: uid('am'), shopId: 'vn-1300s', when: 'Creator có đơn đầu tiên', templateId: 'tm4', on: true, last: relTime(35) + ' · 4 tin' }
     ];
 
     /* nhóm */
     db.members = [
-      { id: 'm1', name: 'user01', email: 'user01@gomax.vn', role: 'Chủ', shops: 'Tất cả', status: 'Hoạt động', last: 'Hôm nay 11:52' },
-      { id: 'm2', name: 'Lê Quốc Huy', email: 'huy@gomax.vn', role: 'Quản lý', shops: "VN 1300'S, VN Lumi", status: 'Hoạt động', last: 'Hôm nay 10:14' },
-      { id: 'm3', name: 'Ngô Thảo Vy', email: 'vy@gomax.vn', role: 'BD', shops: 'TH Nara Home', status: 'Hoạt động', last: 'Hôm qua 17:30' },
+      { id: 'm1', name: 'user01', email: 'user01@gomax.vn', role: 'Chủ', shops: 'Tất cả', status: 'Hoạt động', last: relTime(2) },
+      { id: 'm2', name: 'Lê Quốc Huy', email: 'huy@gomax.vn', role: 'Quản lý', shops: "VN 1300'S, VN Lumi", status: 'Hoạt động', last: relTime(76) },
+      { id: 'm3', name: 'Ngô Thảo Vy', email: 'vy@gomax.vn', role: 'BD', shops: 'TH Nara Home', status: 'Hoạt động', last: relTime(1080) },
       { id: 'm4', name: 'Phạm Đăng Khoa', email: 'khoa@gomax.vn', role: 'BD', shops: "VN 1300'S", status: 'Chờ nhận lời mời', last: '—' },
-      { id: 'm5', name: 'Đỗ Hà Linh', email: 'linh@gomax.vn', role: 'Chỉ xem', shops: 'Tất cả', status: 'Đã khóa', last: '12/09 08:20' }
+      { id: 'm5', name: 'Đỗ Hà Linh', email: 'linh@gomax.vn', role: 'Chỉ xem', shops: 'Tất cả', status: 'Đã khóa', last: at(12, 8, 20) }
     ];
 
     db.audit = [
-      { id: uid('a'), at: '24/09 11:52', who: 'user01', act: 'Duyệt 6 yêu cầu hàng mẫu', shop: "VN 1300'S Coffee", kind: 'Hàng mẫu' },
-      { id: uid('a'), at: '24/09 11:20', who: 'Hệ thống', act: 'Đồng bộ sản phẩm', shop: "VN 1300'S Coffee", kind: 'Đồng bộ' },
-      { id: uid('a'), at: '24/09 09:00', who: 'Tự động hóa', act: 'Gửi 47 lời mời theo quy tắc F&B', shop: "VN 1300'S Coffee", kind: 'Chiến dịch' },
-      { id: uid('a'), at: '24/09 08:14', who: 'Lê Quốc Huy', act: 'Thêm 3 Creator vào blacklist', shop: 'VN Lumi Skin', kind: 'Creator' },
-      { id: uid('a'), at: '23/09 16:40', who: 'Ngô Thảo Vy', act: 'Tạo chiến dịch “Chiến dịch Tết 2027”', shop: 'TH Nara Home', kind: 'Chiến dịch' },
-      { id: uid('a'), at: '23/09 09:02', who: 'user01', act: 'Cập nhật giới hạn gửi lên 500/ngày', shop: "VN 1300'S Coffee", kind: 'Cài đặt' }
+      { id: uid('a'), at: relTime(3), who: 'user01', act: 'Duyệt 6 yêu cầu hàng mẫu', shop: "VN 1300'S Coffee", kind: 'Hàng mẫu' },
+      { id: uid('a'), at: relTime(10), who: 'Hệ thống', act: 'Đồng bộ sản phẩm', shop: "VN 1300'S Coffee", kind: 'Đồng bộ' },
+      { id: uid('a'), at: relTime(150), who: 'Tự động hóa', act: 'Gửi 47 lời mời theo quy tắc F&B', shop: "VN 1300'S Coffee", kind: 'Chiến dịch' },
+      { id: uid('a'), at: relTime(196), who: 'Lê Quốc Huy', act: 'Thêm 3 Creator vào blacklist', shop: 'VN Lumi Skin', kind: 'Creator' },
+      { id: uid('a'), at: at(1, 16, 40), who: 'Ngô Thảo Vy', act: 'Tạo chiến dịch “Chiến dịch Tết 2027”', shop: 'TH Nara Home', kind: 'Chiến dịch' },
+      { id: uid('a'), at: at(1, 9, 2), who: 'user01', act: 'Cập nhật giới hạn gửi lên 500/ngày', shop: "VN 1300'S Coffee", kind: 'Cài đặt' }
     ];
 
     /* report của GOPUSH AI */
     db.aiReports = [
-      { id: uid('r'), name: 'Hiệu suất Creator – tháng 9/2026', kind: 'Phân tích', scope: "VN 1300'S Coffee · 30 ngày", at: '24/09 11:48', by: 'GOPUSH AI', status: 'Hoàn thành' },
-      { id: uid('r'), name: 'So sánh 2 chiến dịch F&B', kind: 'So sánh', scope: "VN 1300'S Coffee · 2 chiến dịch", at: '23/09 16:02', by: 'GOPUSH AI', status: 'Hoàn thành' },
-      { id: uid('r'), name: 'Cảnh báo Creator nhận mẫu không lên video', kind: 'Cảnh báo', scope: 'Tất cả shop · 14 ngày', at: '23/09 08:00', by: 'Lịch tự động', status: 'Hoàn thành' },
-      { id: uid('r'), name: 'Dự báo GMV tháng 10', kind: 'Dự báo', scope: 'Tất cả shop', at: '22/09 19:20', by: 'GOPUSH AI', status: 'Hoàn thành' },
-      { id: uid('r'), name: 'Chân dung Creator ngành Gia dụng', kind: 'Phân tích', scope: 'TH Nara Home · 60 ngày', at: '21/09 10:14', by: 'GOPUSH AI', status: 'Hoàn thành' },
-      { id: uid('r'), name: 'Tối ưu hoa hồng theo SKU', kind: 'Đề xuất', scope: "VN 1300'S Coffee", at: '20/09 09:30', by: 'GOPUSH AI', status: 'Hoàn thành' },
+      { id: uid('r'), name: 'Hiệu suất Creator – ' + month(0), kind: 'Phân tích', scope: "VN 1300'S Coffee · 30 ngày", at: relTime(6), by: 'GOPUSH AI', status: 'Hoàn thành' },
+      { id: uid('r'), name: 'So sánh 2 chiến dịch F&B', kind: 'So sánh', scope: "VN 1300'S Coffee · 2 chiến dịch", at: at(1, 16, 2), by: 'GOPUSH AI', status: 'Hoàn thành' },
+      { id: uid('r'), name: 'Cảnh báo Creator nhận mẫu không lên video', kind: 'Cảnh báo', scope: 'Tất cả shop · 14 ngày', at: at(1, 8), by: 'Lịch tự động', status: 'Hoàn thành' },
+      { id: uid('r'), name: 'Dự báo GMV ' + month(1, true), kind: 'Dự báo', scope: 'Tất cả shop', at: at(2, 19, 20), by: 'GOPUSH AI', status: 'Hoàn thành' },
+      { id: uid('r'), name: 'Chân dung Creator ngành Gia dụng', kind: 'Phân tích', scope: 'TH Nara Home · 60 ngày', at: at(3, 10, 14), by: 'GOPUSH AI', status: 'Hoàn thành' },
+      { id: uid('r'), name: 'Tối ưu hoa hồng theo SKU', kind: 'Đề xuất', scope: "VN 1300'S Coffee", at: at(4, 9, 30), by: 'GOPUSH AI', status: 'Hoàn thành' },
       { id: uid('r'), name: 'Báo cáo tuần cho ban giám đốc', kind: 'Tổng hợp', scope: 'Tất cả shop · hằng tuần', at: 'Thứ 2 hằng tuần', by: 'Lịch tự động', status: 'Đã lên lịch' },
-      { id: uid('r'), name: 'Phân tích Creator ngừng hợp tác', kind: 'Phân tích', scope: 'Tất cả shop · 90 ngày', at: '19/09 15:40', by: 'user01', status: 'Nháp' }
+      { id: uid('r'), name: 'Phân tích Creator ngừng hợp tác', kind: 'Phân tích', scope: 'Tất cả shop · 90 ngày', at: at(5, 15, 40), by: 'user01', status: 'Nháp' }
     ];
 
     db.chat = [];
@@ -508,13 +578,13 @@
         ],
         noSend: true, onlyAssigned: true, logAll: true, banned: 'cam kết doanh số, bao đơn, hoàn tiền 100%'
       },
-      billing: { plan: 'Growth', cycle: 'Theo tháng · gia hạn 01/10/2026', price: '4.900.000 ₫ / tháng', method: 'Chuyển khoản – Vietcombank' }
+      billing: { plan: 'Growth', cycle: 'Theo tháng · gia hạn ' + dateAgo(-7), price: '4.900.000 ₫ / tháng', method: 'Chuyển khoản – Vietcombank' }
     };
 
     db.invoices = [
-      { id: 'INV-2609-004', d: '01/09/2026', p: 'Growth – theo tháng', a: '4.900.000 ₫', st: 'Đã thanh toán' },
-      { id: 'INV-2608-004', d: '01/08/2026', p: 'Growth – theo tháng', a: '4.900.000 ₫', st: 'Đã thanh toán' },
-      { id: 'INV-2607-004', d: '01/07/2026', p: 'Starter – theo tháng', a: '1.900.000 ₫', st: 'Đã thanh toán' }
+      { id: 'INV-2609-004', d: dateAgo(23), p: 'Growth – theo tháng', a: '4.900.000 ₫', st: 'Đã thanh toán' },
+      { id: 'INV-2608-004', d: dateAgo(54), p: 'Growth – theo tháng', a: '4.900.000 ₫', st: 'Đã thanh toán' },
+      { id: 'INV-2607-004', d: dateAgo(85), p: 'Starter – theo tháng', a: '1.900.000 ₫', st: 'Đã thanh toán' }
     ];
 
     /* lời mời đã gửi hôm nay = tổng đã gửi của chiến dịch đang chạy */
@@ -524,7 +594,77 @@
       if (sh.used > sh.soft) sh.used = Math.round(sh.soft * 0.42);
     });
 
-    return db;
+    return localize(db);
+  }
+
+  /* ---------------------------------------------------------- đổi dữ liệu gốc sang thị trường khác
+     Cấu trúc giữ nguyên; thay shop, sản phẩm, tên Creator, khu vực, hãng vận chuyển và tiền tệ. */
+  var VN_SHOP_NAMES = ["VN 1300'S Coffee", 'VN Lumi Skin', 'VN Nara Home', 'VN Kaya Living'];
+  var VN_SHOP_SHORT = ["VN 1300'S", 'VN Lumi'];
+  var VN_IDS = ['vn-1300s', 'vn-lumi', 'th-nara', 'my-kaya'];
+  function localize(db) {
+    /* chuỗi cũ còn sót trong nhật ký, thành viên, report của bản trước */
+    var json = JSON.stringify(db).split('TH Nara Home').join('VN Nara Home').split('MY Kaya Living').join('VN Kaya Living');
+    if (M.code === 'VN') return JSON.parse(json.split('"th-nara"').join('"vn-nara"').split('"my-kaya"').join('"vn-kaya"'));
+    db = JSON.parse(json);
+    var L = MK.local[M.code], code = M.code.toLowerCase();
+    var prodName = {};
+    db.shops.forEach(function (sh, i) {
+      sh.flag = M.flag; sh.name = L.shops[i]; sh.country = M.name; sh.cur = M.cur;
+      (db.products[sh.id] || []).forEach(function (p, k) {
+        var nm = (L.products[i] || [])[k]; if (nm) { prodName[p.id] = { old: p.name, now: nm }; p.name = nm; }
+      });
+    });
+    var used = {};
+    function slug(t) { return t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, ''); }
+    db.creators.forEach(function (c) {
+      var f = pick(L.first), l = pick(L.last);
+      c.name = L.familyFirst ? l + ' ' + f : f + ' ' + l;
+      var base = slug(f + l), u = base + '.' + pick(SLUG);
+      while (used[u]) u = base + intBetween(1, 999) + '.' + pick(SLUG);
+      used[u] = 1;
+      c.user = u; c.tiktok = 'https://www.tiktok.com/@' + u;
+      c.country = M.name; c.region = pick(L.regions);
+      c.email = c.email ? u.replace(/\./g, '') + '@gmail.com' : '';
+      c.phone = '';
+    });
+    var byId = {}; db.creators.forEach(function (c) { byId[c.id] = c; });
+    var carrierMap = { 'Giao Hàng Nhanh': 0, 'SPX Express': 1, 'Viettel Post': 2, 'J&T Express': 3 };
+    db.samples.forEach(function (sp) {
+      var c = byId[sp.creatorId];
+      if (c) {
+        sp.creatorInfo.username = c.user; sp.creatorInfo.creatorId = c.user; sp.creatorInfo.nickname = c.name;
+        (sp.contents || []).forEach(function (x) { x.url = x.url.replace(/@[^/]+/, '@' + c.user); });
+        if (sp.video) sp.video = sp.video.replace(/@[^/]+/, '@' + c.user);
+      }
+      var pn = prodName[sp.productKey];
+      if (pn) {
+        var frag = pn.old.split(' ').slice(0, 4).join(' ');
+        sp.productInfo.title = pn.now;
+        (sp.contents || []).forEach(function (x) { x.title = x.title.split(frag).join(pn.now); });
+      }
+      sp.gmvCurrency = M.iso;
+      var lg = sp.logisticsInfo;
+      if (lg && lg.carrierName) {
+        var cn = L.carriers[carrierMap[lg.carrierName] || 0];
+        lg.carrierName = cn; (lg.trail || []).forEach(function (t) { t.carrier = cn; });
+      }
+    });
+    db.settings.profile.tz = M.tz;
+    db.settings.billing.price = vnd(4900000) + ' / tháng';
+    db.settings.billing.method = 'Thẻ Visa •••• 4242';
+    db.invoices.forEach(function (iv) { iv.a = vnd(/Starter/.test(iv.p) ? 1900000 : 4900000); });
+    /* đổi mã và tên shop trên toàn bộ dữ liệu */
+    json = JSON.stringify(db);
+    VN_IDS.forEach(function (id, i) { json = json.split(id).join(code + '-' + (i + 1)); });
+    VN_SHOP_NAMES.forEach(function (n, i) { json = json.split(n).join(L.shops[i]); });
+    VN_SHOP_SHORT.forEach(function (n, i) { json = json.split(n).join(L.shops[i]); });
+    /* nhân sự mẫu (thành viên, người phụ trách, nhật ký) mang tên địa phương */
+    ['Lê Quốc Huy', 'Ngô Thảo Vy', 'Phạm Đăng Khoa', 'Đỗ Hà Linh'].forEach(function (n, i) {
+      var f = L.first[(i * 3 + 1) % L.first.length], l = L.last[(i * 2 + 1) % L.last.length];
+      json = json.split(n).join(L.familyFirst ? l + ' ' + f : f + ' ' + l);
+    });
+    return JSON.parse(json);
   }
 
   /* ---------------------------------------------------------- lưu / nạp */
@@ -536,6 +676,8 @@
         var k = 'gopush.db.v' + i;
         if (k !== KEY) localStorage.removeItem(k);
       }
+      /* kho theo thị trường của bản v7 */
+      Object.keys(localStorage).forEach(function (k) { if (k.indexOf('gopush.db.v7.') === 0) localStorage.removeItem(k); });
       localStorage.removeItem('gopush.db');
     } catch (e) { /* bỏ qua */ }
   }
@@ -546,14 +688,29 @@
       if (raw) { DB = JSON.parse(raw); return; }
     } catch (e) { /* bỏ qua */ }
     DB = seed();
+    if (SEED_HOOK) SEED_HOOK(DB);
     save();
   }
+  /* mỗi kho ~1,4 triệu ký tự, localStorage chứa được khoảng 3 kho. Đầy thì dọn kho khác
+     (kho chưa đăng nhập trước, rồi kho thị trường khác) — dữ liệu mẫu, mở lại sẽ sinh lại.
+     Không đụng kho đang mở và gói của tài khoản (gopush.db.v8.billing.*). */
   function save() {
-    try { localStorage.setItem(KEY, JSON.stringify(DB)); } catch (e) { /* bỏ qua */ }
+    var json = JSON.stringify(DB);
+    for (var tries = 0; tries < 12; tries++) {
+      try { localStorage.setItem(KEY, json); return; } catch (e) {
+        var keys = Object.keys(localStorage).filter(function (k) {
+          return k.indexOf('gopush.db.v8.') === 0 && k !== KEY && k.indexOf('gopush.db.v8.billing.') !== 0;
+        });
+        if (!keys.length) return;
+        /* kho không gắn tài khoản (2 phần sau tiền tố) dọn trước */
+        keys.sort(function (x, y) { return x.split('.').length - y.split('.').length; });
+        localStorage.removeItem(keys[0]);
+      }
+    }
   }
   function reset() {
     try { localStorage.removeItem(KEY); } catch (e) { /* bỏ qua */ }
-    DB = seed(); save();
+    DB = seed(); if (SEED_HOOK) SEED_HOOK(DB); save();
   }
 
   /* ---------------------------------------------------------- yêu cầu mẫu */
@@ -601,12 +758,12 @@
     if (!unixSec) return '';
     var d = new Date(unixSec * 1000);
     return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' +
-      pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()) + ' (UTC+7)';
+      pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()) + ' ' + tzLabel();
   }
   function tsShort(unixSec) {
     if (!unixSec) return '';
     var d = new Date(unixSec * 1000);
-    return pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+    return fmtDateTime(d);
   }
   function daysFrom(unixSec) {
     if (!unixSec) return 0;
@@ -711,7 +868,21 @@
     save: save, reset: reset, uid: uid,
     shop: shop, creator: creator, tag: tag, tpl: tpl, rel: rel, isBlacklisted: isBlacklisted,
     log: logAct, stats: stats,
-    money: money, vnd: vnd, num: num, pct: pct, fmtDate: fmtDate, fmtDateTime: fmtDateTime, quota: quota,
+    money: money, short: short, amt: amt, vnd: vnd, num: num, pct: pct, cur: cur, fx: fx, toBase: toBase, unit: unit,
+    market: function () { return M; },
+    /* đổi site: lưu kho hiện tại, nạp (hoặc sinh) kho của thị trường mới */
+    useMarket: function (code) {
+      save(); M = MK.get(code); KEY = keyOf();
+      try { localStorage.setItem('gopush.market', M.code); } catch (e) { /* bỏ qua */ }
+      load();
+    },
+    setLang: function (l) { LANG = l; },
+    /* đổi sang kho của tài khoản đang đăng nhập; trả về true nếu có đổi */
+    useUser: function (uid) {
+      if ((uid || '') === UID) return false;
+      save(); UID = uid || ''; KEY = keyOf(); load(); return true;
+    },
+    setSeedHook: function (fn) { SEED_HOOK = fn; }, fmtDate: fmtDate, fmtDateTime: fmtDateTime, fmtDM: fmtDM, dm: function (n) { return fmtDM(daysAgo(n)); }, today: today, ago: dateAgo, at: at, relTime: relTime, month: month, quota: quota,
     SAMPLE_STATUS: SAMPLE_STATUS, REJECT_REASONS: REJECT_REASONS, sampleLabel: sampleLabel,
     SAMPLE_TYPES: SAMPLE_TYPES, APPROVAL: APPROVAL, approvalLabel: approvalLabel,
     sampleSummary: sampleSummary, isLate: isLate, ts: ts, tsShort: tsShort, daysFrom: daysFrom,

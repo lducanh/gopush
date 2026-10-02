@@ -1,6 +1,7 @@
 /* GOPUSH — design tokens.
    Nguồn: design system GoMax Console (tokens.json). Phẳng, gọn, nhiều thông tin,
-   tông đen làm chủ đạo, kết hợp Oracle Red và Redwood làm màu phụ. Tên token giữ đúng như bản gốc;
+   nền trung tính kiểu TikTok Business Center, màu chủ đạo đen; cyan chỉ
+   dùng làm điểm sáng trên top bar tối. Tên token giữ đúng như bản gốc;
    các token đánh dấu "bổ sung" không có trong bản gốc, được suy ra từ nó để phủ
    những phần GOPUSH cần mà bộ gốc chưa có (cảnh báo, biểu đồ, theme tối). */
 
@@ -9,18 +10,18 @@
   --bg-topbar: #121415;
   --bg-topbar-pill: rgba(255, 255, 255, 0.12);
   --bg-topbar-pill-hover: rgba(255, 255, 255, 0.2);   /* bổ sung */
-  --bg-canvas: #f1efed;
+  --bg-canvas: #f8f8f9;
   --bg-surface: #ffffff;
-  --bg-subtle: #f7f5f3;
-  --bg-muted: #e6e1dd;
-  --bg-hover: rgba(18, 20, 21, 0.06);                 /* bổ sung: hover trên mọi nền */
-  --bg-card-dark: #4a433e;
+  --bg-subtle: #f0f0f0;
+  --bg-muted: #ebebeb;
+  --bg-hover: rgba(18, 20, 21, 0.05);                 /* bổ sung: hover trên mọi nền */
+  --bg-card-dark: #404142;
 
   /* Chữ */
   --text-primary: #121415;
   --text-secondary: #6d6e70;
   --text-tertiary: #8a8a8a;
-  --text-disabled: rgba(18, 20, 21, 0.32);            /* bổ sung */
+  --text-disabled: rgba(18, 20, 21, 0.3);             /* bổ sung */
   --text-inverse: #ffffff;
   --text-on-topbar-muted: rgba(255, 255, 255, 0.72);  /* bổ sung */
 
@@ -28,50 +29,53 @@
   --border: #d3d4d5;
   --border-light: #ececed;
 
-  /* Màu chủ đạo đen, Oracle Red là điểm nhấn phụ */
+  /* Màu chủ đạo: đen */
   --accent: #121415;
   --accent-dark: #121415;
-  --accent-hover: #312d2a;                             /* bổ sung */
-  --accent-bright: #c74634;
-  --accent-soft: #f1efed;
-  --accent-border: #d3d4d5;                           /* bổ sung: viền chip / chọn */
+  --accent-hover: #2b2d2f;                            /* bổ sung */
+  --accent-bright: #0fd9d0;                           /* điểm sáng trên top bar tối */
+  --accent-soft: #f0f0f0;
+  --accent-border: #c4c5c7;                           /* bổ sung: viền chip / chọn */
   --on-accent: #ffffff;                               /* bổ sung: chữ trên nền đen */
+  --line-active: rgba(18, 20, 21, 0.3);               /* bổ sung: viền mục đang chọn / hover, nhẹ hơn đen đặc */
+  --ring: rgba(18, 20, 21, 0.06);                      /* bổ sung: vòng sáng quanh ô đang focus */
 
   /* Trạng thái */
-  --success: #5c926d;
-  --success-bg: #e8f0e9;
-  --success-soft: #e8f0e9;
-  --success-text: #356346;
-  --warning: #f0cc72;                                 /* Oracle Brand Yellow */
-  --warning-soft: #fbf3dc;                            /* bổ sung */
-  --warning-text: #6d4d0a;                            /* bổ sung */
-  --danger: #c74634;
-  --danger-soft: #f8e8e4;                             /* bổ sung */
-  --danger-text: #a33527;
-  --new-bg: #eee9f1;
-  --new-text: #6e5579;
+  --success: #00a870;
+  --success-bg: #e6f9ed;
+  --success-soft: #e6f9ed;
+  --success-text: #057e33;
+  --warning: #e37318;                                 /* bổ sung */
+  --warning-soft: #fff1e3;                            /* bổ sung */
+  --warning-text: #a84f00;                            /* bổ sung */
+  --danger: #ca242e;
+  --danger-soft: #fdecee;                             /* bổ sung */
+  --danger-text: #ca242e;
+  --new-bg: #eceafd;
+  --new-text: #5a4fcf;
 
-  /* Ô icon: dùng các màu phụ Redwood, không thêm hue ngoài hệ */
-  --soft-sky: #e8f1f4;               --soft-sky-ink: #3e7183;
+  /* Ô icon: dựng lại từ token trạng thái của hệ thống, không thêm hue mới */
+  --soft-sky: #e3f5f4;               --soft-sky-ink: #017976;
   --soft-sage: var(--success-bg);   --soft-sage-ink: var(--success-text);
   --soft-sand: var(--warning-soft); --soft-sand-ink: var(--warning-text);
   --soft-lilac: var(--new-bg);      --soft-lilac-ink: var(--new-text);
   --soft-blush: var(--danger-soft); --soft-blush-ink: var(--danger-text);
   --soft-mist: var(--bg-subtle);    --soft-mist-ink: var(--text-secondary);
-  --on-pastel: #312d2a;
+  --on-pastel: #121415;
 
-  /* Biểu đồ: màu phụ Redwood */
+  /* Biểu đồ (bổ sung): đen dẫn dắt, oải hương cho chuỗi so sánh
+     như biểu đồ Chi phí / Lần hiển thị của Trung tâm doanh nghiệp */
   --chart-1: #121415;
-  --chart-2: #5c926d;
-  --chart-3: #558ea4;
-  --chart-4: #deb068;
-  --chart-5: #846a92;
-  --chart-6: #a36472;
-  --chart-7: #697778;
+  --chart-2: #8b84f0;
+  --chart-3: #4fc1bc;
+  --chart-4: #d9a55b;
+  --chart-5: #0b4f6c;
+  --chart-6: #e3868c;
+  --chart-7: #a7a9ad;
   --chart-ink: #121415;
-  --chart-1-mid: #55585a;
-  --chart-1-soft: #cfd0d1;
-  --chart-grid: #e6e1dd;
+  --chart-1-mid: #6d6e70;
+  --chart-1-soft: #d3d4d5;
+  --chart-grid: #ececed;
 
   --overlay: rgba(18, 20, 21, 0.45);
 
@@ -111,56 +115,60 @@
   --drawer-width: 440px;
 }
 
-/* Theme tối: đen sâu, nút sáng để đủ tương phản. */
+/* Theme tối (bổ sung): bộ gốc chỉ có theme sáng; bản tối giữ cùng cấu trúc
+   ba lớp; màu chủ đạo đảo thành trắng ngà để đủ tương phản trên nền tối. */
 :root[data-theme="dark"] {
-  --bg-topbar: #1d1917;
-  --bg-canvas: #211e1c;
-  --bg-surface: #2b2724;
-  --bg-subtle: #37312d;
-  --bg-muted: #433b36;
+  --bg-topbar: #0b0c0d;
+  --bg-canvas: #141617;
+  --bg-surface: #1c1e20;
+  --bg-subtle: #26282a;
+  --bg-muted: #2d3032;
   --bg-hover: rgba(255, 255, 255, 0.06);
-  --bg-card-dark: #514740;
+  --bg-card-dark: #303234;
 
-  --text-primary: #f1efed;
-  --text-secondary: #c7c0ba;
-  --text-tertiary: #a49b94;
+  --text-primary: #f1f2f3;
+  --text-secondary: #a9abae;
+  --text-tertiary: #8c8f93;
   --text-disabled: rgba(255, 255, 255, 0.3);
 
-  --border: #5a514b;
-  --border-light: #3d3733;
+  --border: #3a3d40;
+  --border-light: #2b2e30;
 
-  --accent: #f1efed;
-  --accent-dark: #f1efed;
+  --accent: #f1f2f3;
+  --accent-dark: #f1f2f3;
   --accent-hover: #ffffff;
-  --accent-soft: #37312d;
-  --accent-border: #5a514b;
-  --on-accent: #121415;
+  --accent-soft: #2d3032;
+  --accent-border: #4a4d50;
+  --on-accent: #0b0c0d;
+  --line-active: rgba(241, 242, 243, 0.38);
+  --ring: rgba(255, 255, 255, 0.08);
+  --soft-sky: #123331;               --soft-sky-ink: #5dd6d1;
 
-  --success: #83b98f;
-  --success-bg: #203526;
-  --success-soft: #203526;
-  --success-text: #a8d1ad;
-  --warning: #f0cc72;
-  --warning-soft: #463718;
-  --warning-text: #f5d98d;
-  --danger: #e36b58;
-  --danger-soft: #48231f;
-  --danger-text: #ffab9d;
-  --new-bg: #392d3e;
-  --new-text: #d0b8d7;
-  --on-pastel: #f1efed;
+  --success: #2fc18a;
+  --success-bg: #0f2e22;
+  --success-soft: #0f2e22;
+  --success-text: #4fd49d;
+  --warning: #f08a3a;
+  --warning-soft: #33220f;
+  --warning-text: #f5a766;
+  --danger: #ef5b63;
+  --danger-soft: #3a171b;
+  --danger-text: #ff8a90;
+  --new-bg: #25214a;
+  --new-text: #b3acf5;
+  --on-pastel: #121415;
 
-  --chart-1: #f1efed;
-  --chart-2: #83b98f;
-  --chart-3: #82b8c7;
-  --chart-4: #f0cc72;
-  --chart-5: #b89ac3;
-  --chart-6: #d395a5;
-  --chart-7: #a9b8ba;
-  --chart-ink: #f1efed;
-  --chart-1-mid: #b7b5b3;
-  --chart-1-soft: #5a5755;
-  --chart-grid: #3d3733;
+  --chart-1: #f1f2f3;
+  --chart-2: #9d97f5;
+  --chart-3: #7fd9d4;
+  --chart-4: #d9ae70;
+  --chart-5: #5aa3c4;
+  --chart-6: #ea9aa0;
+  --chart-7: #7c7f84;
+  --chart-ink: #f1f2f3;
+  --chart-1-mid: #8c8f93;
+  --chart-1-soft: #3a3d40;
+  --chart-grid: #2b2e30;
 
   --overlay: rgba(0, 0, 0, 0.6);
   --shadow-pop: 0 6px 20px rgba(0, 0, 0, 0.5);

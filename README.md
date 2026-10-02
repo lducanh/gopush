@@ -12,6 +12,10 @@ Chỗ duy nhất chưa nối là những gì bắt buộc phải có phía TikTo
 đồng bộ sản phẩm và đơn hàng thật, gửi lời mời và tin nhắn ra ngoài. Những nút đó
 vẫn bấm được và vẫn cập nhật trạng thái trong app, chỉ không đi ra mạng.
 
+## Thông tin liên hệ
+
+Tên miền **gopush.asia** · Email **contact@gopush.asia** · Điện thoại / Zalo **0867.888.582**.
+
 ## Mở lên
 
 Nhấp đúp `index.html`, hoặc chạy một server tĩnh cho mượt hơn:
@@ -46,26 +50,28 @@ assets/img/             logo GOPUSH, favicon, banner trang chủ, ảnh trang đ
 ## Thiết kế
 
 Toàn bộ CSS dựng theo design system **GoMax Console**: phẳng, gọn, nhiều thông tin,
-nền trung tính và **màu đen** làm màu chủ đạo, Oracle Red làm màu phụ. Tên token trong `tokens.css` giữ đúng
+nền trung tính kiểu Trung tâm doanh nghiệp TikTok, **màu đen** làm màu chủ đạo. Tên token trong `tokens.css` giữ đúng
 như bản gốc (`bg-topbar`, `bg-canvas`, `accent`, `text-secondary`, `radius-md`…); token
 nào bản gốc chưa có thì ghi chú "bổ sung" ngay trong file.
 
 | Nhóm | Giá trị chính |
 | --- | --- |
-| Khung | top bar đen `#121415` · canvas Neutral 30 `#F1EFED` · card / sidebar `#ffffff` |
+| Khung | top bar đen `#121415` · canvas `#f8f8f9` · card / sidebar `#ffffff` |
 | Chữ | `#121415` chính · `#6d6e70` phụ · `#8a8a8a` meta 12px |
-| Nhấn | đen `#121415` (nút, link, mục chọn) · Oracle Red `#C74634` (điểm nhấn/trạng thái) · Neutral 30 `#F1EFED` (nền chọn) |
+| Nhấn | đen `#121415` (nút, link, mục chọn) · `#f0f0f0` (nền chọn) · cyan `#0fd9d0` chỉ làm điểm sáng trên top bar |
+| Trạng thái | xanh lá `#00a870` · cam `#e37318` · đỏ `#ca242e` |
 | Viền | `border` `#d3d4d5` cho input / nút · `border-light` `#ececed` cho card / divider |
 | Chữ | font hệ thống, 14px/22px, **chỉ hai độ đậm 400 và 500** |
 | Bo góc | 4px tag · 6px nút, input, mục menu · 8px card · pill cho badge |
 | Bóng | gần như không; chỉ menu nổi và drawer |
+| Mục đang chọn | viền mảnh `--line-active` (đen 30%) + vòng mờ `--ring`, không dùng viền đen đặc; thẻ có icon màu lấy viền / nền theo màu icon |
 
 Quy ước:
 
 - **Nút**: mặc định là outline trung tính 36px. Nút chính (`gm-btn-primary`) nền **đen**
   `accent-dark` — màu chủ đạo, như nút "Thêm tài khoản nhà quảng cáo" của Trung tâm doanh
   nghiệp TikTok; tối đa một nút mỗi vùng. Nút nhỏ `gm-btn-sm` nền xám, không viền (Xem chi
-  tiết, Hồ sơ); `gm-btn-soft` nền Neutral 30 cho hành động nhanh trong bảng (Mời, Xem lỗi).
+  tiết, Hồ sơ); `gm-btn-soft` nền xám nhạt cho hành động nhanh trong bảng (Mời, Xem lỗi).
 - **Trạng thái trong bảng** là chấm màu + chữ thường, không nền ("● Đã phê duyệt"); ngoài
   bảng mới dùng tag có nền.
 - **Ô số liệu** (KPI, stat tile) cùng một kiểu trên mọi trang: nền canvas, icon đen, số
@@ -77,9 +83,9 @@ Quy ước:
   Trung tâm doanh nghiệp TikTok.
 - **Link** chữ đen đậm, gạch chân khi rê chuột.
 - **Tag** 22px bo 4px, nền nhạt + chữ đậm cùng tông: xanh lá thành công, cam cảnh báo,
-  Oracle Red cho lỗi, Slate/Pine cho loại.
+  đỏ cho lỗi, tím nhạt cho loại.
 - **Thẻ KPI / stat tile**: nền canvas, không viền, số 20px/500 tabular-nums.
-- **Biểu đồ**: đường cong mềm, đen cho chuỗi chính, Pine/Ocean/Plum cho chuỗi so
+- **Biểu đồ**: đường cong mềm, đen cho chuỗi chính, oải hương/teal/cát cho chuỗi so
   sánh (như biểu đồ Chi phí / Lần hiển thị của TikTok). Biểu đồ đường luôn đặt cạnh một
   donut cơ cấu theo tỉ lệ 2/3 – 1/3 để chữ trục không bị phóng to. Sparkline, phễu và bảng xếp hạng chỉ dùng một
   tông đen, nhạt dần theo thứ hạng.
@@ -116,7 +122,7 @@ quá 80%), ô nhỏ **Tìm hoặc hỏi AI**, hai icon quan trọng và avatar.
   hỏi AI về trang đang xem, Việc cần xử lý, tạo lời mời, tìm Creator. Dùng ↑ ↓ ↵ Esc.
 - ✦ mở / đóng panel GOPUSH AI. 🔔 đếm việc tồn, bấm ra 5 việc gấp nhất kèm chấm mức độ
   và lối sang Việc cần xử lý.
-- Menu avatar: hồ sơ, gói, ngôn ngữ VI/EN, giao diện tối, trợ giúp & liên hệ, đặt lại dữ
+- Menu avatar: hồ sơ, gói, ngôn ngữ (7 thứ tiếng), giao diện tối, trợ giúp & liên hệ, đặt lại dữ
   liệu thử, đăng xuất.
 
 ### Sitemap theo vòng đời hợp tác
@@ -124,18 +130,20 @@ quá 80%), ô nhỏ **Tìm hoặc hỏi AI**, hai icon quan trọng và avatar.
 | Module | Trang | Phạm vi |
 | --- | --- | --- |
 | Tổng quan | Trang chủ · **Việc cần xử lý** | gộp được |
-| Creator | Tìm Creator · Kho Creator (Bảng / **Pipeline**) · Blacklist | theo shop |
-| | Nhãn | dùng chung |
+| Creator | Tìm Creator · Kho Creator (Bảng / **Pipeline**, tải lên, sao lưu) · **Phân loại Creator** · Blacklist | theo shop |
+| | Gắn Tag | dùng chung |
 | Hợp tác | Chiến dịch lời mời · Nhắn tin hàng loạt | gộp được |
 | | **Chi tiết chiến dịch** (ẩn khỏi menu, mở từ tên chiến dịch) · Tự động hóa (lời mời + tin nhắn) · Điều chỉnh kế hoạch | theo shop |
 | | Thư viện mẫu | dùng chung |
 | Hàng mẫu | Yêu cầu hàng mẫu · Theo dõi vận đơn | theo shop |
 | Kết quả | Dashboard (đã gộp Báo cáo tổng) · Theo chiến dịch | gộp được |
-| | Báo cáo custom · Report AI | dùng chung |
-| Cài đặt doanh nghiệp | Cửa hàng · Thành viên · Vai trò & quyền · Nhật ký · Gói & thanh toán · Thông báo · Cài đặt AI · Hồ sơ | dùng chung |
+| | Báo cáo custom | dùng chung |
+| **GOPUSH AI** (nhóm riêng) | AI Chat · Report AI · Cài đặt AI | dùng chung |
+| | AI Tìm Creator · Content AI | theo shop |
+| Cài đặt doanh nghiệp | Cửa hàng · Thành viên · Vai trò & quyền · Nhật ký · Gói & thanh toán · Thông báo · Hồ sơ | dùng chung |
 
 Đường dẫn cũ giữ nguyên nên mọi liên kết vẫn chạy; `/reports` chuyển sang `/dashboard`,
-`/ai` mở Trang chủ kèm panel AI (`ALIASES` trong `data.js`). Mỗi trang khai báo `scope`,
+`/ai` mở AI Chat (`ALIASES` trong `data.js`). Mỗi trang khai báo `scope`,
 `hidden`, `navAs` ngay trong sitemap.
 
 ### Phạm vi xem
@@ -169,16 +177,221 @@ mẫu, ký nhận, nội dung kèm lượt xem và đơn.
 
 ## GOPUSH AI
 
-Không còn là module riêng: nút **GOPUSH AI** trên top bar (và thanh hỏi nhanh dưới bảng)
-mở panel bên phải. Panel ghi rõ đang đọc gì — trang, phạm vi shop, số bộ lọc, số dòng đang
-chọn, kỳ dữ liệu — và gợi ý câu hỏi theo module đang mở. Report AI nằm trong Kết quả, Cài
-đặt AI nằm trong Cài đặt doanh nghiệp.
+Nhóm menu riêng trên sidebar (module `ai`, `flat: true` nên mỗi trang là một dòng có icon).
+Code trang ở `assets/js/ai.js`, thao tác đi qua `dispatch('aix:…')`.
+
+- **AI Chat** — kiểu ChatGPT: lịch sử bên trái, màn chào với 6 gợi ý, trả lời có các bước
+  suy nghĩ hiện dần. Hỏi được cả số liệu lẫn cách dùng hệ thống (tạo chiến dịch, phân quyền).
+- **Report AI** — khung tạo report: chọn chiến dịch, loại report, kỳ, định dạng và model GPT
+  (GPT-5, GPT-5 mini, GPT-4.1, GPT-4o); chạy xong thêm vào danh sách và hiện bản report.
+- **AI Tìm Creator** — 4 khối: theo điều kiện / cửa hàng / sản phẩm / nội dung. Kết quả
+  chấm điểm phù hợp, lý do AI chọn, lưu từng người hoặc lưu tất cả vào Kho.
+- **Content AI** — viết từ sản phẩm của shop, theo tiêu chí (văn phong, độ dài, ngôn ngữ)
+  hoặc chỉ bằng prompt; 1–3 phương án, sao chép hoặc lưu vào Thư viện mẫu.
+- **Cài đặt AI** — nguồn dữ liệu, tiêu chí chấm điểm, cách trả lời.
+
+**Model AI ẩn với khách hàng.** Model đặt trong code (`AI_MODEL` ở đầu `ai.js`). Chỉ tài khoản
+admin hệ thống (`AUTH.isAdmin()`) thấy bộ chọn model và thẻ "Model AI (OpenAI)" trong Cài đặt AI.
+
+Các lựa chọn trên trang AI dùng **bộ chọn dạng filter** (`AIX.pick`): nút gọn "Nhãn: giá trị ▾",
+bấm mới mở danh sách, có ô tìm khi trên 7 mục, chọn một hoặc nhiều.
+
+**Report AI** đi theo form 6 bước: chiến dịch → câu hỏi report cần trả lời → kỳ và mốc so sánh →
+KPI mục tiêu → người đọc → ghi chú. Report trả lời thẳng câu hỏi ở đầu (Đạt / Đạt một phần /
+Chưa đạt), rồi chỉ số so với mốc, phễu có đánh dấu khâu nghẽn và GMV bị bỏ lỡ, đánh giá từng
+chiến dịch (Mở rộng / Giữ / Tối ưu khâu mẫu / Dừng), Creator tạo ra kết quả, và danh sách việc
+nên làm kèm tác động ước tính (₫), người làm, hạn. Tải CSV hoặc In / PDF.
+
+Mỗi lần chạy AI là một job có thanh tiến độ, danh sách bước và khung xương nhấp nháy
+(`runJob` trong `ai.js`); phần tiến độ cập nhật thẳng vào `#aix-job`, không vẽ lại cả trang.
+Hiện là dữ liệu mô phỏng, chưa gọi API OpenAI thật.
+
+Nút **GOPUSH AI** trên top bar (và thanh hỏi nhanh dưới bảng) vẫn mở panel bên phải để hỏi
+về trang đang xem.
+
+## Thị trường và ngôn ngữ
+
+Nút **🇻🇳 VN** trên thanh trên đổi **site**: 9 thị trường TikTok Shop — Việt Nam, Thái Lan,
+Indonesia, Malaysia, Philippines, Singapore (Đông Nam Á), Hoa Kỳ, Brasil, Nhật Bản. Mỗi site có
+kho dữ liệu riêng (`gopush.db.v8.<mã>` trong localStorage): shop, sản phẩm, tên Creator, khu vực,
+hãng vận chuyển và tiền tệ của nước đó. Danh sách và dữ liệu địa phương ở `assets/js/markets.js`.
+
+Số tiền lưu theo một đơn vị gốc (VND) và quy đổi khi hiển thị (`S.money`, `S.amt`, `S.vnd`), nên
+mọi bộ lọc, ngưỡng và phân tích chạy giống nhau ở mọi site. Tỷ giá trong `markets.js` là tỷ giá
+cố định để demo. **Cách hiển thị theo từng thị trường** (`store.js`):
+
+| Thị trường | Ngôn ngữ mặc định | Tiền | Rút gọn số (follower, GMV…) | Ngày · giờ |
+| --- | --- | --- | --- | --- |
+| VN | Tiếng Việt | 1.234.000 ₫ | 12K · 1,7tr · 2,1 tỷ | 24/09/2026 · 14:30 |
+| TH | ไทย | ฿1,234 | 12K · 1.7M | 24/09/2026 · 14:30 |
+| ID | Bahasa Indonesia | Rp 1.234 | 12 rb · 1,7 jt · 2,1 M | 24/09/2026 · 14:30 |
+| MY, PH, SG | English | RM / ₱ / S$ | 12K · 1.7M | 24/09/2026 · 14:30 |
+| US | English | $1,234 | 12K · 1.7M | 09/24/2026 · 2:30 PM |
+| BR | Português | R$ 1.234 | 12 mil · 1,7 mi | 24/09/2026 · 14:30 |
+| JP | 日本語 | ¥1,234 | 1.2万 · 1.7億 | 2026/09/24 · 14:30 |
+
+Đổi thị trường thì **đổi luôn ngôn ngữ** theo bảng trên (vẫn chọn lại ngôn ngữ khác được ở nút 🌐).
+Kho dữ liệu của mỗi site sinh theo đúng định dạng đó: tên Creator, tên nhân sự, shop, khu vực, hãng
+vận chuyển, tiền, ngày. Mọi mốc thời gian trong dữ liệu mẫu tính lùi từ ngày giờ thật (`S.today()`).
+
+### Dịch toàn bộ nội dung
+
+Ngôn ngữ: Tiếng Việt (gốc), English, ไทย, Bahasa Indonesia, 日本語, Português, 中文. Hai lớp dịch
+(`assets/js/i18n.js`):
+
+1. **Bảng dịch tay** (`NAV`, `STR`): menu, tiêu đề trang, thanh trên, đăng nhập / đăng ký.
+2. **Từ điển toàn bộ nội dung** `assets/i18n/<lang>.js` (~2.800 câu mỗi ngôn ngữ, chỉ nạp file của
+   ngôn ngữ đang chọn). Sau mỗi lần vẽ, lớp dịch quét chữ hiển thị, `placeholder`, `title`,
+   `aria-label` (kể cả popup, toast, biểu đồ): khớp nguyên câu trước, không khớp thì thay từng cụm đã
+   biết trong câu ghép (câu có số, tên, ngày); "tháng 10" đổi thành tên tháng theo ngôn ngữ. Phần tử
+   có `data-notr` thì không dịch. Đổi về tiếng Việt khôi phục chữ gốc, không cần tải lại trang.
+
+Thêm hoặc sửa câu chữ:
+
+```bash
+python3 tools/i18n-extract.py tools/i18n/source.json   # lấy mọi câu tiếng Việt trong assets/js
+# dịch các câu còn thiếu, thêm file tools/i18n/tr/<lang>.<n>.json ({"câu gốc": "bản dịch"});
+# file số lớn hơn ghi đè file số nhỏ hơn
+python3 tools/i18n-build.py tools/i18n/tr               # sinh assets/i18n/<lang>.js, báo câu còn thiếu
+```
+
+Bản dịch hiện có do máy dịch theo bảng thuật ngữ (lời mời, hàng mẫu, vận đơn…); trước khi phát
+hành nên nhờ người bản ngữ duyệt từng file. Khi làm bản thật, nên chuyển dần sang khóa dịch
+(`t('invite.send')`) cho các câu ghép để đúng trật tự từ ở mọi ngôn ngữ.
+
+## Gói dịch vụ
+
+`assets/js/plans.js`. Bốn gói, giá theo tháng; gói năm = giá tháng × 12 × 0,8 rồi làm tròn về giá
+gần nhất có phần nghìn kết thúc bằng 099 / 299 / 399 / 599 / 699 / 999 (`nice()`):
+
+| Gói | Tháng | Năm | Cửa hàng | Tác vụ song song | Tài khoản | Mời / nhắn tin mỗi ngày |
+| --- | --- | --- | --- | --- | --- | --- |
+| Dùng thử | 0 (7 ngày) | — | 1 | 2 | 1 chính | 1.000 |
+| Cơ bản | 399.000 | 3.699.000 | 2 | 2 | 1 chính | 3.000 |
+| Chuyên nghiệp | 1.299.000 | 12.399.000 | 8 | 8 | 1 chính + 1 phụ | 10.000 |
+| Cao cấp | 2.699.000 | 25.999.000 | 20 | 20 | 1 chính + 9 phụ | Không giới hạn |
+
+Hạn mức áp vào hệ thống (`PLANS.check / room / take`):
+
+- **Lời mời và tin nhắn mỗi ngày tính chung cho cả tài khoản**, cộng mọi cửa hàng: gói Chuyên nghiệp
+  10.000/ngày, một shop dùng 6.000 thì các shop còn lại chỉ còn 4.000. Mọi điểm gửi (mời lẻ, mời
+  hàng loạt, quy tắc tự động, kéo thẻ sang "Đã mời", nhắn tin, nhắc vận đơn, tạo đợt) đều trừ vào
+  hạn mức này; gửi hàng loạt chỉ gửi đến khi hết hạn mức. Gói Cao cấp không giới hạn.
+- Mỗi shop vẫn có **giới hạn an toàn riêng** trong Cài đặt shop; chạm giới hạn này chỉ báo, không
+  mời nâng gói.
+- **Tác vụ song song** = số shop chạy chiến dịch cùng lúc.
+- Thêm cửa hàng, mời thành viên vượt mức → popup không đủ quyền. Đã ở gói cao nhất mà chạm giới
+  hạn → popup chữ (không mời nâng gói), kèm liên hệ hỗ trợ.
+
+Gói, đơn chờ thanh toán, hóa đơn, phương thức thanh toán và ngày gia hạn **thuộc về tài khoản**
+(`gopush.db.v8.billing.<uid>`), giống nhau ở mọi thị trường. Nâng gói trả phí tạo **đơn chờ thanh
+toán**, không tự kích hoạt; cổng thanh toán để trống chờ tích hợp. Dùng thử kích hoạt ngay, cố định
+7 ngày. Không hạ gói giữa kỳ. Trang **Bảng giá** công
+khai ở `#/pricing`; trong app, **Gói & thanh toán** có hạn mức đã dùng, đổi tháng/năm, nâng gói
+(trừ phần còn lại của gói cũ), bảng so sánh và hóa đơn. Thanh toán hiện là mô phỏng.
+
+Trang chủ công khai (`assets/js/landing.js`): hero kèm mô phỏng màn hình, dải số liệu, "một nền
+tảng thay Excel", 4 nhóm tính năng, 4 bước bắt đầu, bảng giá rút gọn, dải kêu gọi dùng thử.
+
+## Thông báo hệ thống
+
+Thanh nhỏ trên cùng của app (`assets/js/announce.js`), kiểu Trung tâm doanh nghiệp TikTok:
+chuyển 1/N (tự chuyển 8 giây), nội dung, nút kèm mũi tên, nút đóng. Đóng thì thanh thu lại và
+khung app lấy lại chiều cao. Admin hệ thống quản lý ở **Cài đặt doanh nghiệp › Thông báo hệ thống**
+(`#/admin/announcements`, chỉ admin thấy): nội dung, chữ trên nút, liên kết, màu, đối tượng (mọi
+người / chỉ khách hàng / khách dùng thử), thị trường; có xem trước. Màu có sẵn (vàng nhạt, xanh
+dương nhạt, đỏ cam, xanh ngọc, tím, hồng TikTok) hoặc **tự chọn màu** — chữ tự đổi đậm / trắng
+cho đủ tương phản. **Hiện tối đa** 1–5 thông báo hoặc tất cả (theo thứ tự mới nhất). Bấm × chỉ ẩn tạm: tải lại trang
+hoặc đăng nhập lại là hiện lại. Bản demo lưu thông báo ở localStorage của trình duyệt.
+
+## Tài khoản và cơ cấu quyền
+
+`assets/js/auth.js` (đăng nhập), `link.js` (liên kết gian hàng), `plans.js` (gói, popup không đủ
+quyền). Mọi trang trong app yêu cầu đăng nhập (`#/login?next=…`). Sau khi đăng nhập, quyền được
+kiểm tra theo **3 lớp, đúng thứ tự** (`canOpen` / `denyFor` trong `app.js`):
+
+| Lớp | Điều kiện | Khi chưa đạt | Trang vẫn mở |
+| --- | --- | --- | --- |
+| 1. Liên kết gian hàng | Đã ủy quyền gian hàng TikTok Shop (`AUTH.linked()`) | Popup **Bạn chưa liên kết gian hàng** → mở **Hướng dẫn liên kết** | Trang chủ, Cửa hàng, Gói & thanh toán, Hồ sơ |
+| 2. Gói | Gói có tính năng / còn hạn mức (`PLANS.has`, `PLANS.check`) | Về Trang chủ + popup **Không đủ quyền** (gấu) | Như trên khi chưa có gói |
+| 3. Vai trò | Trang `adminOnly` cần admin hệ thống | Về Trang chủ + popup chữ **Trang dành cho quản trị** | — |
+
+Tính năng theo gói: Dùng thử = Tìm Creator, Kho Creator, chiến dịch, hàng mẫu, báo cáo (1 cửa hàng,
+không tài khoản phụ); Cơ bản thêm Phân loại / Gắn Tag, Tự động hóa; Chuyên nghiệp và Cao cấp thêm
+GOPUSH AI và Report AI. Hạn mức cửa hàng, tài khoản phụ, lời mời mỗi ngày theo bảng ở mục Gói.
+
+**Popup hiển thị ở đâu**
+
+| Popup | Hiện khi | Đóng / tiếp theo |
+| --- | --- | --- |
+| Hướng dẫn liên kết (4 bước, nút mở link ủy quyền) | Tự mở sau mỗi lần đăng nhập nếu chưa liên kết; nút "Liên kết ngay" ở Trang chủ; thao tác ở trang Cửa hàng | × / "Để sau" / bấm ra ngoài / Esc. "Tôi đã ủy quyền xong" → kiểm tra → đồng bộ dữ liệu → mở tính năng theo gói |
+| Bạn chưa liên kết gian hàng | Chưa liên kết mà bấm module, mở trang, bấm thao tác, bấm GOPUSH AI | "Để sau" / "Xem hướng dẫn liên kết" |
+| Không đủ quyền (gấu, đốm sáng) | Vượt hạn mức, tính năng gói không có, chưa có gói | Về Trang chủ; × / ra ngoài / Esc để đóng; bấm banner mở Gói & thanh toán |
+| Popup chữ (không mời nâng gói) | Trang chỉ dành cho admin; gói Cao cấp chạm giới hạn | "Đã hiểu" / "Liên hệ hỗ trợ" |
+| Thông báo hệ thống (thanh dưới top bar) | Mỗi lần tải trang / đăng nhập | × ẩn tạm tới lần tải sau |
+
+Link ủy quyền: `tiktokAuthUrl` trong `auth-config.js` (demo:
+`https://services.tiktokshop.com/open/authorize?service_id=7520124419516778246`; khi được cấp ISV
+thay bằng link OAuth chính thức, kết quả ủy quyền thay cho nút "Tôi đã ủy quyền").
+
+> **Bản thật kiểm tra quyền ở máy chủ.** Bản demo kiểm tra liên kết, gói, vai trò và hạn mức ngay
+> trên trình duyệt để người duyệt thử được mọi luồng. Khi có backend, mọi kiểm tra này phải chạy ở
+> máy chủ (API từ chối khi không đủ quyền); phần giao diện chỉ để hiển thị popup cho đúng.
+
+**Tài khoản demo — mỗi tài khoản một luồng** (chỉ ở chế độ demo). Danh sách đăng nhập nhanh **chỉ
+hiện qua link dành cho người duyệt** `#/login?review=1` (nhớ trong phiên), khách thường không thấy.
+Mỗi lần đăng nhập, tài khoản demo tự về trạng thái ban đầu; có nút đặt lại thủ công:
+
+| Email / mật khẩu | Liên kết | Gói | Vai trò | Luồng kiểm tra |
+| --- | --- | --- | --- | --- |
+| `admin@gopush.asia` / `Admin@2026` | ✓ | Cao cấp | Admin hệ thống | Toàn quyền, trang quản trị (Thông báo hệ thống), model AI |
+| `doanhnghiep@gopush.asia` / `Demo@2026` | ✓ | Cao cấp | Khách | Khách dùng đầy đủ tính năng; trang admin bị chặn |
+| `coban@gopush.asia` / `Basic@2026` | ✓ | Cơ bản | Khách | GOPUSH AI, Report AI bị khóa |
+| `dungthu@gopush.asia` / `Trial@2026` | ✓ | Dùng thử | Khách | 1 cửa hàng; Phân loại, Tự động hóa, AI bị khóa; vượt hạn mức → popup |
+| `moi@gopush.asia` / `New@2026` | ✗ | Chưa có gói | Khách | **Mỗi lần đăng nhập như vừa tạo**: bắt ủy quyền → mọi module hiện popup gói → "Bắt đầu dùng thử" |
+| `lienket@gopush.asia` / `Link@2026` | ✗ | Dùng thử | Khách | Popup hướng dẫn liên kết khi đăng nhập; liên kết xong mới dùng được |
+| Tự đăng ký | ✗ | Chưa có gói | Khách | Đủ luồng: liên kết → chọn gói / dùng thử |
+
+Mỗi tài khoản một kho dữ liệu riêng (`gopush.db.v8.<thị trường>.<uid>`), sinh ra đã cắt đúng
+hạn mức gói; chưa liên kết thì kho trống. Gói và trạng thái liên kết lưu theo tài khoản.
+**Tài khoản demo tự đặt lại mỗi lần đăng nhập:** về đúng gói, trạng thái liên kết và dữ liệu
+chỉ định trong bảng trên; nâng gói, liên kết hay thao tác thử ở lần trước không mang sang.
+
+- **Mua gói không tự nâng cấp:** tóm tắt đơn → bước thanh toán (cổng thanh toán để trống chờ tích
+  hợp) → đơn "Chờ thanh toán"; gói chỉ đổi khi thanh toán được xác nhận. Dùng thử thì kích hoạt ngay.
+- **Chế độ demo** (mặc định): tài khoản lưu trong trình duyệt, mật khẩu băm PBKDF2-SHA256.
+  Google và email đặt lại mật khẩu báo cần cấu hình.
+- **Tài khoản thật + Google:** điền cấu hình Firebase vào `assets/js/auth-config.js` (hướng dẫn
+  trong file), bật Email/Password và Google trong Firebase Authentication, thêm tên miền vào
+  Authorized domains.
+
+## Module Creator
+
+Phần mở rộng nằm ở `assets/js/creators.js`, thao tác qua `dispatch('crx:…')`.
+
+- **Tìm Creator** — dữ liệu TikTok Shop (API); thêm bộ lọc **Phân loại**.
+- **Kho Creator** — kho dữ liệu riêng trên GOPUSH. Dải sao lưu (tự động 02:00, tải bản sao lưu,
+  sao lưu ngay) và **Tải lên** file CSV: khớp theo Username, không tạo trùng, tự tạo Tag mới,
+  có file mẫu. File Excel cần lưu thành CSV UTF-8.
+- **Phân loại Creator** — người dùng tự thêm nhóm (mặc định: Mega, Macro, Mid-tier, Micro, Nano,
+  Freecast, LIVE seller) bằng điều kiện trên Follower, GMV, tỉ lệ đăng, GPM, lượt xem, người xem
+  LIVE, ngành hàng, quốc gia, loại nội dung, liên hệ. Số Creator khớp cập nhật ngay khi gõ;
+  bấm "Tìm Creator" để mở Tìm Creator đã lọc sẵn.
+- **Gắn Tag** — tạo tag và gắn nhanh bằng cách dán danh sách username.
+- **Blacklist** — Creator bị chặn.
+
+Mọi trang của module đều có nút **Tải xuống** (CSV, mở được bằng Excel).
+
+**Nguồn dữ liệu.** Chỉ **Tìm Creator** gọi API TikTok Shop. Phân loại Creator, Gắn Tag, AI Tìm
+Creator, AI Chat và Report AI đều khai thác **Kho Creator** (dữ liệu đã đồng bộ về GOPUSH và sao
+lưu hằng ngày; `CRX.kho(shopId)` trong `creators.js`). Đầu mỗi trang có dải `ig-srcnote` ghi rõ
+trang đang đọc từ API hay từ Kho. Kho trống thì AI Tìm Creator hiện hướng dẫn lưu / tải lên trước.
 
 ## Hỗ trợ
 
 Nút tròn cố định ở góc dưới bên phải của mọi trang, kể cả trang công khai. Rê chuột
 hoặc bấm là mở popup gọn với ba kênh: gọi điện, Zalo OA và email. Mỗi kênh là một
-link thật (`tel:`, `zalo.me`, `mailto:`) nên bấm là mở ứng dụng tương ứng.
+link thật (`tel:` 0867.888.582, `zalo.me/0867888582`, `mailto:contact@gopush.asia`) nên bấm là mở ứng dụng tương ứng.
 
 ## Mật độ
 
@@ -212,12 +425,12 @@ Router chạy theo hash. Trang gắn shop có dạng `#/s/{shopId}/…`, còn l�
 | Module | Đường dẫn |
 | --- | --- |
 | Tổng quan | `#/home` (mặc định) · `#/dashboard` |
-| Creator | `#/s/{shop}/creators/discover` · `…/library` · `#/creators/tags` · `…/blacklist` |
+| Creator | `#/s/{shop}/creators/discover` · `…/library` · `…/segments` · `#/creators/tags` · `…/blacklist` |
 | Chiến dịch | `#/s/{shop}/campaigns/invites` · `…/messages` · `…/tasks` · `#/templates` |
 | Hàng mẫu | `#/s/{shop}/samples` · `…/samples/shipments` |
 | Tự động hóa | `#/s/{shop}/auto/invites` · `…/auto/messages` |
 | Báo cáo | `#/reports` · `#/reports/campaigns` · `#/reports/custom` |
-| GOPUSH AI | `#/ai` · `#/ai/reports` · `#/ai/settings` |
+| GOPUSH AI | `#/ai/chat` · `#/ai/reports` · `#/s/{shop}/ai/creators` · `#/s/{shop}/ai/content` · `#/ai/settings` |
 | Cửa hàng | `#/shops` · `#/shops/{shop}` |
 | Nhóm | `#/team/members` · `#/team/roles` · `#/team/audit` |
 | Cài đặt & Gói | `#/settings/profile` · `#/settings/billing` · `#/settings/notifications` |
@@ -437,13 +650,13 @@ từng lời mời.
 
 ## Ghi chú
 
-- **Tiếng Việt là ngôn ngữ chính.** Bản EN mới dịch điều hướng và tiêu đề trang,
-  sẽ hoàn thiện sau. Khi làm thật, mọi chuỗi đưa hết qua file dịch.
+- **Tiếng Việt là ngôn ngữ gốc.** 6 ngôn ngữ khác dịch toàn bộ nội dung qua từ điển
+  `assets/i18n/` (xem mục Thị trường và ngôn ngữ).
 - Tài khoản mặc định là **user01** với avatar gấu vẽ bằng SVG (`UI.bear()`).
 - Bộ dữ liệu ban đầu: 4 cửa hàng, 1.200 Creator, 15 chiến dịch, 6 tác vụ, 96 yêu
   cầu hàng mẫu, 5 nhãn, 8 mẫu, 8 report. Sinh bằng bộ số giả ngẫu nhiên có hạt cố
   định nên lần nào cũng giống nhau.
-- Dữ liệu lưu ở khóa `gopush.db.v7`. Khi đổi cấu trúc, khóa được nâng phiên bản và
+- Dữ liệu lưu ở khóa `gopush.db.v8.<thị trường>.<uid>`. Khi đổi cấu trúc, khóa được nâng phiên bản và
   các khóa cũ tự xóa lúc nạp, nên không phải xóa cache tay.
 - Logo là bộ khóa **GOPUSH · BY GOMAX DIGITAL**, dùng file `assets/img/logo-gomax.webp`
   lấy từ URL GOMAX được chỉ định, không xử lý lại ảnh.

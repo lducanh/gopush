@@ -25,16 +25,19 @@
       id: 'creators', icon: 'users', vi: 'Creator', en: 'Creators', group: 'biz',
       pages: [
         { id: 'discover', ic: 'search', shop: true, path: '/s/{shop}/creators/discover', vi: 'Tìm Creator', en: 'Find creators',
-          dvi: 'Lọc Creator đầy đủ các trường, lưu bộ lọc thành mẫu dùng lại.',
-          den: 'Full-field creator filtering; save filters as reusable presets.', scope: 'shop' },
-        { id: 'library', ic: 'users', shop: true, path: '/s/{shop}/creators/library', vi: 'Kho Creator', en: 'Creator library', badge: '1.284',
-          dvi: 'Mọi Creator đã lưu, đã liên hệ hoặc đã hợp tác, kèm trạng thái quan hệ.',
-          den: 'Every saved, contacted or partnered creator with relationship status.', scope: 'shop' },
-        { id: 'tags', ic: 'tag', path: '/creators/tags', vi: 'Nhãn', en: 'Tags',
-          dvi: 'Nhãn dùng chung cả nhóm, đếm số Creator mỗi nhãn.',
-          den: 'Team-wide tags with creator counts.', scope: 'account' },
+          dvi: 'Tìm Creator mới qua API TikTok Shop theo đầy đủ điều kiện; lưu vào Kho để phân loại, gắn tag và phân tích bằng AI.',
+          den: 'Search TikTok Shop creators (API) with full filters; filter by segment, save presets.', scope: 'shop' },
+        { id: 'library', ic: 'database', shop: true, path: '/s/{shop}/creators/library', vi: 'Kho Creator', en: 'Creator library',
+          dvi: 'Cơ sở dữ liệu Creator của bạn trên GOPUSH: đồng bộ từ TikTok Shop, tải lên từ file, sao lưu tự động mỗi ngày.',
+          den: 'Your own creator database on GOPUSH: saved, uploaded, backed up daily.', scope: 'shop' },
+        { id: 'segments', ic: 'layers', shop: true, feature: 'segments', path: '/s/{shop}/creators/segments', vi: 'Phân loại Creator', en: 'Creator segments',
+          dvi: 'Tự tạo nhóm Creator (Macro, Mid-tier, Micro, Freecast…) bằng điều kiện; GOPUSH chia nhóm Creator trong Kho.',
+          den: 'Define creator segments by conditions; matched against TikTok creator data.', scope: 'shop' },
+        { id: 'tags', ic: 'tag', path: '/creators/tags', feature: 'segments', vi: 'Gắn Tag', en: 'Tags',
+          dvi: 'Tạo tag dùng chung cả nhóm và gắn tag cho Creator để lọc, giao việc, chạy chiến dịch.',
+          den: 'Team-wide tags; tag creators to filter, assign and target campaigns.', scope: 'account' },
         { id: 'blacklist', ic: 'ban', shop: true, path: '/s/{shop}/creators/blacklist', vi: 'Blacklist', en: 'Blacklist',
-          dvi: 'Creator không bao giờ gửi; tự loại khỏi mọi chiến dịch và tự động hóa.',
+          dvi: 'Creator bị chặn: không bao giờ gửi lời mời, tin nhắn hay hàng mẫu; tự loại khỏi mọi chiến dịch và tự động hóa.',
           den: 'Never-contact creators; auto-excluded from campaigns and automations.', scope: 'shop' }
       ]
     },
@@ -50,10 +53,10 @@
         { id: 'messages', ic: 'msgSend', shop: true, path: '/s/{shop}/campaigns/messages', vi: 'Nhắn tin hàng loạt', en: 'Bulk messages',
           dvi: 'Danh sách đợt nhắn tin và wizard 4 bước tạo đợt gửi.',
           den: 'Message batches and the 4-step send wizard.', scope: 'multi' },
-        { id: 'auto-invites', ic: 'clock', shop: true, path: '/s/{shop}/auto/invites', vi: 'Tự động hóa', en: 'Automation',
+        { id: 'auto-invites', ic: 'clock', shop: true, feature: 'auto', path: '/s/{shop}/auto/invites', vi: 'Tự động hóa', en: 'Automation',
           dvi: 'Tự mời Creator mới khớp bộ lọc đã lưu theo lịch chạy hằng ngày.',
           den: 'Invite newly matching creators on a daily schedule.', scope: 'shop' },
-        { id: 'auto-messages', ic: 'flash', shop: true, path: '/s/{shop}/auto/messages', vi: 'Tự động hóa', en: 'Automation',
+        { id: 'auto-messages', ic: 'flash', shop: true, feature: 'auto', path: '/s/{shop}/auto/messages', vi: 'Tự động hóa', en: 'Automation',
           dvi: 'Quy tắc dạng Khi → Gửi mẫu tin nhắn khi có sự kiện.',
           den: 'When → send rules triggered by creator events.', scope: 'shop', hidden: true, navAs: 'auto-invites' },
         { id: 'tasks', ic: 'sliders', shop: true, path: '/s/{shop}/campaigns/tasks', vi: 'Điều chỉnh kế hoạch', en: 'Plan adjustments',
@@ -87,9 +90,27 @@
         { id: 'report-custom', ic: 'sliders', path: '/reports/custom', vi: 'Báo cáo custom', en: 'Custom report',
           dvi: 'Tự chọn bộ lọc, chỉ số và cách nhóm; lưu lại để mở nhanh lần sau.',
           den: 'Pick filters, metrics and grouping; save for later.', scope: 'account' },
-        { id: 'ai-reports', ic: 'file', path: '/ai/reports', vi: 'Report AI', en: 'AI reports', badge: '8',
-          dvi: 'Report do AI tạo: xem, tải, xuất file, chia sẻ hoặc xóa.',
-          den: 'AI-generated reports: view, download, export, share or delete.', scope: 'account' }
+      ]
+    },
+    {
+      /* menu riêng GOPUSH AI: flat = mỗi trang là một dòng trên sidebar, không gom thành menu con */
+      id: 'ai', icon: 'ai', vi: 'GOPUSH AI', en: 'GOPUSH AI', group: 'ai', flat: true,
+      pages: [
+        { id: 'ai-chat', ic: 'chat', path: '/ai/chat', feature: 'ai', vi: 'AI Chat', en: 'AI Chat',
+          dvi: 'Trò chuyện với GOPUSH AI về cách dùng hệ thống và dữ liệu Creator, chiến dịch, hàng mẫu, doanh thu.',
+          den: 'Chat about the system and your creator, campaign, sample and revenue data.', scope: 'multi' },
+        { id: 'ai-reports', ic: 'file', path: '/ai/reports', feature: 'report', vi: 'Report AI', en: 'AI reports',
+          dvi: 'Quét dữ liệu chiến dịch, đánh giá kết quả, chỉ ra nguyên nhân và việc nên làm.',
+          den: 'Scan campaign data, evaluate results, find causes and next actions.', scope: 'account' },
+        { id: 'ai-find', ic: 'search', shop: true, path: '/s/{shop}/ai/creators', feature: 'ai', vi: 'AI Tìm Creator', en: 'AI creator finder',
+          dvi: 'AI quét Kho Creator theo điều kiện, cửa hàng, sản phẩm hoặc nội dung, chấm điểm độ phù hợp.',
+          den: 'Find creators by criteria, shop, product or content style, with a fit score.', scope: 'shop' },
+        { id: 'ai-content', ic: 'edit', shop: true, path: '/s/{shop}/ai/content', feature: 'ai', vi: 'Content AI', en: 'Content AI',
+          dvi: 'Viết kịch bản video, caption, kịch bản LIVE, lời mời Creator từ sản phẩm của shop hoặc từ prompt.',
+          den: 'Write scripts, captions, LIVE run-sheets and invites from shop products or a prompt.', scope: 'shop' },
+        { id: 'ai-settings', ic: 'settings', path: '/ai/settings', feature: 'ai', vi: 'Cài đặt AI', en: 'AI settings',
+          dvi: 'Dạy AI: nguồn dữ liệu được quét, tiêu chí chấm điểm, cách trả lời.',
+          den: 'Train the assistant: data sources, scoring criteria, answer style.', scope: 'account' }
       ]
     },
     {
@@ -116,9 +137,9 @@
         { id: 'notifications', ic: 'bell', path: '/settings/notifications', vi: 'Thông báo', en: 'Notifications',
           dvi: 'Chọn sự kiện nào báo qua email, Zalo OA hoặc trong app.',
           den: 'Choose which events notify by email, Zalo OA or in-app.', scope: 'account' },
-        { id: 'ai-settings', ic: 'settings', path: '/ai/settings', vi: 'Cài đặt AI', en: 'AI settings',
-          dvi: 'Dạy AI: nguồn dữ liệu được quét, tiêu chí chấm điểm, cách trả lời.',
-          den: 'Train the assistant: data sources, scoring criteria, answer style.', scope: 'account' },
+        { id: 'sys-announce', ic: 'bell', path: '/admin/announcements', vi: 'Thông báo hệ thống', en: 'System announcements', adminOnly: true,
+          dvi: 'Chỉ admin hệ thống: đăng thông báo ở thanh trên cùng cho người dùng, chọn đối tượng và thị trường.',
+          den: 'System admins only: publish top-bar announcements by audience and market.', scope: 'account' },
         { id: 'profile', ic: 'user', path: '/settings/profile', vi: 'Hồ sơ', en: 'Profile',
           dvi: 'Thông tin, mật khẩu, bảo mật 2 lớp, ngôn ngữ và múi giờ.',
           den: 'Details, password, 2FA, language and time zone.', scope: 'account' }
@@ -129,13 +150,15 @@
   /* trang cũ đã gộp → trang mới */
   var ALIASES = {
     '/reports': '/dashboard',
-    '/ai': '/home?ai=1'
+    '/ai': '/ai/chat'
   };
 
   var PUBLIC = [
     { id: 'landing', path: '/', vi: 'Landing', en: 'Landing' },
+    { id: 'pricing', path: '/pricing', vi: 'Bảng giá', en: 'Pricing' },
     { id: 'login', path: '/login', vi: 'Đăng nhập', en: 'Sign in' },
     { id: 'signup', path: '/signup', vi: 'Đăng ký', en: 'Sign up' },
+    { id: 'forgot', path: '/forgot', vi: 'Quên mật khẩu', en: 'Forgot password' },
     { id: 'privacy', path: '/privacy', vi: 'Chính sách bảo mật', en: 'Privacy policy' },
     { id: 'terms', path: '/terms', vi: 'Điều khoản sử dụng', en: 'Terms of service' }
   ];

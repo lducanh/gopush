@@ -1,14 +1,9 @@
-/* GOPUSH — hợp đồng dữ liệu của TikTok Affiliate (ISV).
-   Mọi thứ trong file này là ràng buộc của nền tảng: tên trường, enum, giới hạn.
-   Không tự đổi. Phần nào GOPUSH tự quyết định thì để ở store.js hoặc wizard.js.
-
-   Nguồn: affiliate.tiktok.com/api/v1/oec/affiliate
-     POST /creator/marketplace/option        lấy danh sách brand, hạng mục, bậc GMV, ngôn ngữ
-     POST /creator/marketplace/find          tìm Creator
-     POST /seller/invitation_group/create    tạo lời mời (bọc trong "invitation_group")
-     POST /seller/invitation_group/search    danh sách lời mời
-     POST /seller/invitation_group/sensitive_text_check   kiểm tra nội dung nhạy cảm
-     GET  /seller/invitation_group/invitation/limit       hạn mức lời mời còn lại */
+/* GOPUSH — mô hình dữ liệu Affiliate dùng cho giao diện: tên trường, enum, giới hạn.
+   Được thiết kế để ánh xạ sang TikTok Shop Partner API (nhóm Affiliate Seller: tìm Creator,
+   lời mời mục tiêu, hàng mẫu, đơn hàng). GOPUSH đang chờ cấp quyền ISV; khi có quyền sẽ đối
+   chiếu lại từng trường với tài liệu Partner API chính thức trước khi kết nối.
+   Bản demo không gọi bất kỳ API nào của TikTok — dữ liệu sinh sẵn trong store.js.
+   Phần nào GOPUSH tự quyết định thì để ở store.js hoặc wizard.js. */
 (function (global) {
   'use strict';
 
