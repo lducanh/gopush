@@ -93,8 +93,8 @@
       ]
     },
     {
-      /* menu riêng GOPUSH AI: flat = mỗi trang là một dòng trên sidebar, không gom thành menu con */
-      id: 'ai', icon: 'ai', vi: 'GOPUSH AI', en: 'GOPUSH AI', group: 'ai', flat: true,
+      /* GOPUSH AI là một mục mẹ trong Nghiệp vụ: bấm vào mới xổ các trang con */
+      id: 'ai', icon: 'ai', vi: 'GOPUSH AI', en: 'GOPUSH AI', group: 'biz',
       pages: [
         { id: 'ai-chat', ic: 'chat', path: '/ai/chat', feature: 'ai', vi: 'AI Chat', en: 'AI Chat',
           dvi: 'Trò chuyện với GOPUSH AI về cách dùng hệ thống và dữ liệu Creator, chiến dịch, hàng mẫu, doanh thu.',
@@ -114,7 +114,8 @@
       ]
     },
     {
-      id: 'business', icon: 'settings', vi: 'Cài đặt doanh nghiệp', en: 'Business settings', group: 'admin',
+      /* không nằm trong menu chính: một dòng "Cài đặt" ghim ở đáy sidebar, các trang chuyển bằng thanh tab */
+      id: 'business', icon: 'settings', vi: 'Cài đặt hệ thống', en: 'System settings', group: 'settings',
       pages: [
         { id: 'shop-list', ic: 'store', path: '/shops', vi: 'Cửa hàng', en: 'Shops',
           dvi: 'Ủy quyền OAuth, trạng thái token và lần đồng bộ gần nhất.',

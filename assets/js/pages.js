@@ -99,15 +99,12 @@
       ['send', 'Lời mời hàng loạt', 'Tự chia 50 Creator mỗi đợt', '#/s/' + sp + '/campaigns/invites'],
       ['box', 'Duyệt hàng mẫu', st.pending + ' yêu cầu đang chờ', '#/s/' + sp + '/samples'],
       ['truck', 'Theo dõi vận đơn', st.lateNoVideo + ' đơn quá hạn chưa đăng', '#/s/' + sp + '/samples/shipments'],
-      ['msgSend', 'Nhắn tin hàng loạt', 'Theo mẫu, giãn cách an toàn', '#/s/' + sp + '/campaigns/messages'],
-      ['sliders', 'Điều chỉnh kế hoạch', 'Dọn, bù, gia hạn lời mời', '#/s/' + sp + '/campaigns/tasks'],
-      ['template', 'Thư viện mẫu', db.templates.length + ' mẫu lời mời và tin nhắn', '#/templates'],
-      ['store', 'Ủy quyền shop mới', 'Qua OAuth chính thức', '#/shops']
-    ].map(function (t) {
-      return '<a class="ig-tile" href="' + t[3] + '">' +
+    ].map(function (t, k) {
+      /* 4 ô, mỗi ô một màu pastel; biểu tượng lớn mờ ở góc dưới phải */
+      return '<a class="ig-tile is-big t' + k + '" href="' + t[3] + '">' +
         '<span class="ic">' + ic(t[0]) + '</span>' +
         '<span class="t"><b>' + U.esc(t[1]) + '</b><span class="tx">' + U.esc(t[2]) + '</span></span>' +
-        '<span class="go">' + ic('right') + '</span></a>';
+        '<span class="go">' + ic('right') + '</span><span class="wm" aria-hidden="true">' + glyph(t[0], k) + '</span></a>';
     }).join('');
 
     return c.head(
@@ -115,6 +112,21 @@
       U.btn('Tạo lời mời hàng loạt', { variant: 'primary', icon: 'send', act: 'campaign:new:invite' })
     ) +
     '<div class="ig-section">' +
+      /* thao tác nhanh, mở gần đây, banner lên đầu; số liệu và việc cần xử lý xuống dưới */
+      '<h2>Thao tác nhanh</h2><div class="ig-tiles">' + tiles + '</div>' +
+
+      '<div class="ig-sec-head"><h2>Mở gần đây</h2></div><div class="ig-chips">' + [
+        ['users', 'Kho Creator', '#/s/' + sp + '/creators/library'],
+        ['send', 'Lời mời hàng loạt', '#/s/' + sp + '/campaigns/invites'],
+        ['box', 'Yêu cầu hàng mẫu', '#/s/' + sp + '/samples'],
+        ['chart', 'Báo cáo theo chiến dịch', '#/reports/campaigns'],
+        ['store', 'Chi tiết shop', '#/shops/' + sid],
+        ['history', 'Nhật ký hoạt động', '#/team/audit']
+      ].map(function (r) { return '<a href="' + r[2] + '">' + ic(r[0]) + U.esc(r[1]) + '</a>'; }).join('') + '</div>' +
+
+      '<a class="ig-banner" href="#/s/' + sid + '/creators/discover">' +
+        '<img src="' + U.img('banner.png') + '" alt="Kết nối Creator TikTok Shop"></a>' +
+
       '<div class="ig-sec-head"><h2>Nhịp 7 ngày qua</h2><a class="gm-link" href="#/dashboard">Xem Dashboard đầy đủ</a></div>' +
       '<div class="ig-kpis ig-kpis-4">' +
         kpi({ i: 'trend', l: 'GMV liên kết (' + S.cur() + ')', v: S.money(st.gmv), d: '+18,2%', s: series(st.gmv) }) +
@@ -149,22 +161,26 @@
             U.btn('Tạo lời mời', { sm: true, variant: 'primary', act: 'campaign:new:invite' }))
         }) +
       '</div>' +
-
-      '<h2>Thao tác nhanh</h2><div class="ig-tiles">' + tiles + '</div>' +
-
-      '<div class="ig-sec-head"><h2>Mở gần đây</h2></div><div class="ig-chips">' + [
-        ['users', 'Kho Creator', '#/s/' + sp + '/creators/library'],
-        ['send', 'Lời mời hàng loạt', '#/s/' + sp + '/campaigns/invites'],
-        ['box', 'Yêu cầu hàng mẫu', '#/s/' + sp + '/samples'],
-        ['chart', 'Báo cáo theo chiến dịch', '#/reports/campaigns'],
-        ['store', 'Chi tiết shop', '#/shops/' + sid],
-        ['history', 'Nhật ký hoạt động', '#/team/audit']
-      ].map(function (r) { return '<a href="' + r[2] + '">' + ic(r[0]) + U.esc(r[1]) + '</a>'; }).join('') + '</div>' +
-
-      '<a class="ig-banner" href="#/s/' + sid + '/creators/discover">' +
-        '<img src="' + U.img('banner.png') + '" alt="Kết nối Creator TikTok Shop"></a>' +
     '</div>';
   };
+
+  /* biểu tượng khối (đầy màu, 2 tông) cho góc ô Thao tác nhanh */
+  var GLYPH = {
+    users: '<circle cx="34" cy="24" r="13" fill="url(#G)"/><path d="M10 64c0-14 11-24 24-24s24 10 24 24z" fill="url(#G)"/>' +
+      '<circle cx="62" cy="30" r="10" fill="url(#H)"/><path d="M46 66c1-12 8-20 17-20s17 8 17 20z" fill="url(#H)"/>',
+    send: '<path d="M8 38 74 10 56 72 40 48z" fill="url(#G)"/><path d="M40 48 74 10 30 56z" fill="url(#H)"/>',
+    box: '<path d="M40 8 70 22 40 36 10 22z" fill="url(#H)"/><path d="M10 22 40 36v36L10 58z" fill="url(#G)"/>' +
+      '<path d="M70 22 40 36v36l30-14z" fill="url(#G)" opacity=".75"/>',
+    truck: '<rect x="6" y="18" width="44" height="34" rx="6" fill="url(#G)"/><path d="M50 30h14l10 12v10H50z" fill="url(#H)"/>' +
+      '<circle cx="22" cy="56" r="8" fill="url(#H)"/><circle cx="62" cy="56" r="8" fill="url(#H)"/>'
+  };
+  /* một màu đơn cho mỗi ô; độ mờ đặt trong CSS */
+  var GLYPH_C = ['#5b7fe6', '#2fa77b', '#ec8a3b', '#8a63e0'];
+  function glyph(name, k) {
+    var c = GLYPH_C[k % GLYPH_C.length];
+    return '<svg viewBox="0 0 80 80" width="80" height="80">' +
+      (GLYPH[name] || '').replace(/url\(#G\)/g, c).replace(/url\(#H\)/g, c) + '</svg>';
+  }
 
   /* --- Dashboard --- */
   P.dashboard = function (c) {
@@ -1191,7 +1207,7 @@
         '<p>Hạn mức hôm nay của ' + U.esc(c.shop.name) + ': đã dùng <b>' + S.num(c.shop.used || 0) + '</b> / ' + S.num(c.shop.limit || c.shop.soft || 0) + ' lượt.</p>';
     }
     if (/vai trò|quyền|role|bd\b/.test(low)) {
-      return '<p>GOPUSH có 4 vai trò mặc định, chỉnh trong <b>Cài đặt doanh nghiệp › Vai trò &amp; quyền</b>:</p><ul>' +
+      return '<p>GOPUSH có 4 vai trò mặc định, chỉnh trong <b>Cài đặt hệ thống › Vai trò &amp; quyền</b>:</p><ul>' +
         '<li><b>Chủ sở hữu</b>: toàn quyền, kể cả gói, thanh toán và gỡ shop.</li>' +
         '<li><b>Quản trị</b>: quản lý thành viên, shop, mọi chiến dịch.</li>' +
         '<li><b>BD</b>: tìm và mời Creator, duyệt hàng mẫu trên các shop được giao; không xem thanh toán.</li>' +

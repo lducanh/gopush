@@ -109,7 +109,7 @@ giới thiệu, thẻ đăng nhập) thêm class `ig-logo--ink` để đảo đ�
 top bar đen 56px · logo | 🇻🇳 VN 1300'S Coffee ● ⌄ ....... [🔍 Tìm hoặc hỏi AI… ⌘K] ✦ 🔔⁷ [🐻 ⌄]
                           828/4.000 lời mời hôm nay ▬
 sidebar 240px    · Nghiệp vụ: Tổng quan · Creator · Hợp tác · Hàng mẫu · Kết quả
-                   Quản trị: Cài đặt doanh nghiệp  (bấm module để mở / thu menu con)
+                   Cài đặt hệ thống: một dòng ghim ở đáy sidebar, các trang chuyển bằng thanh tab
 nội dung         · nền canvas; tiêu đề 24px + nhãn phạm vi nằm ngoài card, phần dưới gom vào card trắng
 panel AI 400px   · mở bên phải từ ô tìm hoặc thanh hỏi dưới bảng, nội dung vẫn thao tác được
 ```
@@ -140,7 +140,7 @@ quá 80%), ô nhỏ **Tìm hoặc hỏi AI**, hai icon quan trọng và avatar.
 | | Báo cáo custom | dùng chung |
 | **GOPUSH AI** (nhóm riêng) | AI Chat · Report AI · Cài đặt AI | dùng chung |
 | | AI Tìm Creator · Content AI | theo shop |
-| Cài đặt doanh nghiệp | Cửa hàng · Thành viên · Vai trò & quyền · Nhật ký · Gói & thanh toán · Thông báo · Hồ sơ | dùng chung |
+| Cài đặt hệ thống | Cửa hàng · Thành viên · Vai trò & quyền · Nhật ký · Gói & thanh toán · Thông báo · Hồ sơ | dùng chung |
 
 Đường dẫn cũ giữ nguyên nên mọi liên kết vẫn chạy; `/reports` chuyển sang `/dashboard`,
 `/ai` mở AI Chat (`ALIASES` trong `data.js`). Mỗi trang khai báo `scope`,
@@ -297,7 +297,7 @@ tảng thay Excel", 4 nhóm tính năng, 4 bước bắt đầu, bảng giá rú
 
 Thanh nhỏ trên cùng của app (`assets/js/announce.js`), kiểu Trung tâm doanh nghiệp TikTok:
 chuyển 1/N (tự chuyển 8 giây), nội dung, nút kèm mũi tên, nút đóng. Đóng thì thanh thu lại và
-khung app lấy lại chiều cao. Admin hệ thống quản lý ở **Cài đặt doanh nghiệp › Thông báo hệ thống**
+khung app lấy lại chiều cao. Admin hệ thống quản lý ở **Cài đặt hệ thống › Thông báo hệ thống**
 (`#/admin/announcements`, chỉ admin thấy): nội dung, chữ trên nút, liên kết, màu, đối tượng (mọi
 người / chỉ khách hàng / khách dùng thử), thị trường; có xem trước. Màu có sẵn (vàng nhạt, xanh
 dương nhạt, đỏ cam, xanh ngọc, tím, hồng TikTok) hoặc **tự chọn màu** — chữ tự đổi đậm / trắng

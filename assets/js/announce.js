@@ -111,18 +111,35 @@
     var el = e.target.closest && e.target.closest('[data-ann]');
     if (!el) return;
     var act = el.getAttribute('data-ann'), l = active();
-    if (act === 'prev') { IDX = (IDX - 1 + l.length) % l.length; repaint(); }
-    else if (act === 'next') { IDX = (IDX + 1) % l.length; repaint(); }
+    if (act === 'prev') { go((IDX - 1 + l.length) % l.length); }
+    else if (act === 'next') { go((IDX + 1) % l.length); }
     else if (act === 'close') {
       closedNow = true; IDX = 0; repaint();
     }
   });
-  /* tự chuyển thông báo mỗi 8 giây khi có nhiều cái */
-  setInterval(function () {
+  /* chuyển thông báo nhẹ nhàng: chữ mờ dần + trượt lên, đổi nội dung, rồi hiện lại */
+  var ROTATE_MS = 60000, FADE_MS = 360, timer = null;
+  function go(i) {
     var el = document.getElementById('ann');
-    if (!el || el.matches(':hover')) return;
-    var n = active().length; if (n > 1) { IDX = (IDX + 1) % n; repaint(); }
-  }, 8000);
+    if (!el) { IDX = i; repaint(); return schedule(); }
+    el.classList.add('is-out');
+    setTimeout(function () {
+      IDX = i; repaint();
+      var n = document.getElementById('ann');
+      if (n) { n.classList.add('is-in-start'); requestAnimationFrame(function () { requestAnimationFrame(function () { n.classList.remove('is-in-start'); }); }); }
+    }, FADE_MS);
+    schedule();
+  }
+  /* tự chuyển mỗi 1 phút khi có nhiều thông báo; bấm ‹ › thì đếm lại từ đầu; đang rê chuột thì chờ */
+  function schedule() {
+    clearTimeout(timer);
+    timer = setTimeout(function tick() {
+      var el = document.getElementById('ann'), n = active().length;
+      if (el && el.matches(':hover')) { timer = setTimeout(tick, 5000); return; }
+      if (el && n > 1) go((IDX + 1) % n); else schedule();
+    }, ROTATE_MS);
+  }
+  schedule();
 
   /* ---------------------------------------------------------- trang quản trị (chỉ admin hệ thống) */
   function blank() { return { id: '', rev: 0, on: true, tone: 'butter', color: '#ffe9a8', audience: 'all', market: 'all', text: '', cta: 'Xem ngay', link: '' }; }

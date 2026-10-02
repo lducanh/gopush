@@ -336,10 +336,17 @@
             }).join('') + '</div></div></div>';
         }).join('');
     }
+    /* Cài đặt hệ thống: một dòng ghim ở đáy, mở trang cài đặt đầu tiên (có thanh tab) */
+    var setMod = D.MODULES.filter(function (m) { return m.id === 'business'; })[0];
+    var setOn = activeModule.id === 'business';
+    /* banner quảng bá dịch vụ GOMAX (mở trang ngoài ở tab mới) */
+    var promo = '<a class="ig-promo" href="https://gomaxdigital.vn" target="_blank" rel="noopener">' +
+      '<b>Booking KOC Freecast</b>' +
+      '<span class="pd"><em>New</em>Dịch vụ từ GOMAX Digital</span>' + ic('arrowUpRight', 'pa') + '</a>';
+    var setting = '<div class="ig-side-foot">' + promo + '<a class="gm-nav-item' + (setOn ? ' is-current is-active' : '') + '" href="' + href(setMod.pages[0]) +
+      '" title="' + U.attr(label(setMod)) + '">' + ic('settings') + '<span class="tx">' + U.esc(label(setMod)) + '</span></a></div>';
     return '<nav class="gm-sidebar ig-side" id="subnav" aria-label="Điều hướng">' +
-      group('biz', I.nav('Nghiệp vụ', 'Operations', state.lang)) +
-      group('ai', 'GOPUSH AI') +
-      group('admin', I.nav('Quản trị', 'Administration', state.lang)) + '</nav>';
+      group('biz', I.nav('Nghiệp vụ', 'Operations', state.lang)) + setting + '</nav>';
   }
 
   function support() {
@@ -375,9 +382,22 @@
       shop: S.shop(state.shop), scope: scope, all: scope === 'all', id: cur && cur.id, lang: state.lang, v: v,
       head: function (actions, o) {
         return U.pageHead({ title: (o && o.title) || label(p), desc: (o && o.desc) || desc(p), actions: actions,
-          note: scopeNote(p), crumb: o && o.crumb });
+          note: scopeNote(p), crumb: o && o.crumb }) + settingsTabs(p);
       }
     };
+  }
+
+  /* thanh tab của Cài đặt hệ thống: thay cho menu con trên sidebar */
+  function settingsTabs(p) {
+    var m = D.MODULES.filter(function (x) { return x.id === 'business'; })[0];
+    if (!m || m.pages.indexOf(p) < 0) return '';
+    var adm = window.AUTH && window.AUTH.isAdmin(), on = p.navAs || p.id;
+    return '<nav class="ig-settabs" aria-label="' + U.attr(label(m)) + '">' + m.pages.filter(function (x) {
+      return !x.hidden && (!x.adminOnly || adm);
+    }).map(function (x) {
+      return '<a href="' + href(x) + '" class="' + (x.id === on ? 'is-on' : '') + '">' + ic(x.ic) + U.esc(label(x)) +
+        (!canOpen(x) ? ic('lock', 'lk') : '') + '</a>';
+    }).join('') + '</nav>';
   }
 
   /* trang thao tác trên một shop nhưng đang xem Tất cả cửa hàng: hỏi chọn shop */

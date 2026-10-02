@@ -49,7 +49,7 @@
     'AI Tìm Creator': ['AI ค้นหาครีเอเตอร์', 'AI cari kreator', 'AIクリエイター検索', 'IA busca criadores'],
     'Content AI': ['คอนเทนต์ AI', 'Konten AI', 'AIコンテンツ', 'Conteúdo IA'],
     'Cài đặt AI': ['ตั้งค่า AI', 'Pengaturan AI', 'AI設定', 'Configurações de IA'],
-    'Cài đặt doanh nghiệp': ['ตั้งค่าธุรกิจ', 'Pengaturan bisnis', 'ビジネス設定', 'Configurações da empresa'],
+    'Cài đặt hệ thống': ['ตั้งค่าระบบ', 'Pengaturan sistem', 'システム設定', 'Configurações do sistema'] , 'Cài đặt doanh nghiệp': ['ตั้งค่าธุรกิจ', 'Pengaturan bisnis', 'ビジネス設定', 'Configurações da empresa'],
     'Cửa hàng': ['ร้านค้า', 'Toko', 'ショップ', 'Lojas'],
     'Chi tiết shop': ['รายละเอียดร้าน', 'Detail toko', 'ショップ詳細', 'Detalhe da loja'],
     'Thành viên': ['สมาชิก', 'Anggota', 'メンバー', 'Membros'],

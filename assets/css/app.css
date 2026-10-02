@@ -3879,3 +3879,77 @@ kbd {
 .ig-deny .note p { font-size: 13.5px; line-height: 1.55; color: var(--text-2, #555); margin: 0; }
 .ig-deny .note .foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
 :root[data-theme="dark"] .ig-deny .note .ic { background: #1d2540; color: #9fb3ff; }
+/* Cài đặt doanh nghiệp: dòng ghim đáy sidebar + thanh tab trên trang */
+.ig-side-foot { margin-top: auto; padding-top: var(--space-2); border-top: 1px solid var(--border-light); }
+.ig-settabs { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; margin: 0 var(--space-6) var(--space-4);
+  border-bottom: 1px solid var(--border-light); }
+.ig-settabs::-webkit-scrollbar { display: none; }
+.ig-settabs a { display: inline-flex; align-items: center; gap: 6px; flex: none; padding: 9px 12px; margin-bottom: -1px;
+  font-size: 13px; color: var(--text-secondary); text-decoration: none; border-bottom: 2px solid transparent; white-space: nowrap; }
+.ig-settabs a:hover { color: var(--text-primary); }
+.ig-settabs a.is-on { color: var(--text-primary); font-weight: 500; border-bottom-color: var(--text-primary); }
+.ig-settabs a .gm-icon { width: 15px; height: 15px; }
+.ig-settabs a .lk { width: 12px; height: 12px; opacity: .55; }
+@media (max-width: 640px) { .ig-settabs { margin: 0 16px var(--space-3); } }
+/* Thao tác nhanh: 4 ô cao, icon pastel, biểu tượng lớn mờ góc dưới phải */
+.ig-tiles:has(.ig-tile.is-big) { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 1100px) { .ig-tiles:has(.ig-tile.is-big) { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .ig-tiles:has(.ig-tile.is-big) { grid-template-columns: 1fr; } }
+.ig-tile.is-big { position: relative; overflow: hidden; flex-direction: column; align-items: flex-start; gap: var(--space-3);
+  min-height: 132px; padding: var(--space-4); }
+.ig-tile.is-big .ic { width: 40px; height: 40px; border-radius: 12px; }
+.ig-tile.is-big .ic .gm-icon { width: 20px; height: 20px; }
+.ig-tile.is-big .t { position: relative; z-index: 1; width: 100%; }
+.ig-tile.is-big .go { position: absolute; top: var(--space-4); right: var(--space-4); }
+.ig-tile.is-big .wm { position: absolute; right: -10px; bottom: -16px; opacity: .16; pointer-events: none;
+  transform: rotate(-14deg); transition: transform .3s cubic-bezier(.2,.7,.3,1), opacity .2s; }
+.ig-tile.is-big .wm svg { display: block; width: 84px; height: 84px; filter: blur(.6px); }
+.ig-tile.is-big:hover .wm { transform: rotate(-6deg) translate(-3px, -3px) scale(1.04); opacity: .24; }
+.ig-tile.t0 .ic { background: #e8f0ff; color: #4a6cd4; }
+.ig-tile.t1 .ic { background: #e6f7f1; color: #23946c; }
+.ig-tile.t2 .ic { background: #fff1e4; color: #d07a2c; }
+.ig-tile.t3 .ic { background: #f3ecff; color: #7d5bd0; }
+:root[data-theme="dark"] .ig-tile.t0 .ic { background: #1d2846; color: #9db4ff; }
+:root[data-theme="dark"] .ig-tile.t1 .ic { background: #15332a; color: #7fdcb6; }
+:root[data-theme="dark"] .ig-tile.t2 .ic { background: #3a2817; color: #f2b680; }
+:root[data-theme="dark"] .ig-tile.t3 .ic { background: #2a2142; color: #c4b0ff; }
+
+/* banner quảng bá ở đáy sidebar: tối giản, nền trắng, viền mảnh, vạch gradient TikTok mảnh ở mép trên */
+.ig-promo { position: relative; overflow: hidden; display: block; margin: 0 0 var(--space-2); padding: 11px 34px 10px 12px;
+  border-radius: 10px; text-decoration: none; color: var(--text-primary); background: var(--bg-surface);
+  border: 1px solid var(--border-light); transition: border-color .18s, box-shadow .18s; }
+.ig-promo::before { content: ""; position: absolute; inset: 0 0 auto; height: 2px; background: linear-gradient(90deg, #25f4ee, #fe2c55); opacity: .85; }
+.ig-promo:hover { border-color: var(--border-strong, #d0d4d6); box-shadow: 0 6px 18px -12px rgba(18, 20, 21, .3); }
+.ig-promo b { display: block; font-size: 13px; font-weight: 600; letter-spacing: -.01em; white-space: nowrap; }
+.ig-promo em { font-style: normal; font-size: 9.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+  padding: 1px 5px; border-radius: 4px; color: #e0244a; background: rgba(254, 44, 85, .09); }
+.ig-promo .pd { display: flex; align-items: center; gap: 6px; margin-top: 3px; font-size: 11.5px; color: var(--text-tertiary); white-space: nowrap; }
+.ig-promo .pa { position: absolute; right: 12px; top: 50%; width: 14px; height: 14px; margin-top: -7px; color: var(--text-tertiary);
+  transition: transform .18s, color .18s; }
+.ig-promo:hover .pa { transform: translate(2px, -2px); color: var(--text-primary); }
+:root[data-theme="dark"] .ig-promo em { color: #ff7a96; background: rgba(254, 44, 85, .16); }
+.ig-app.sub-collapsed .ig-promo { display: none; }
+
+:root[data-theme="dark"] .ig-tile.is-big .wm { opacity: .2; }
+/* Thao tác nhanh: nổi khối — nền ánh màu riêng, bóng mềm nhiều lớp, nhấc lên khi rê */
+.ig-tile.is-big { --tc: 91, 127, 230; border-color: rgba(var(--tc), .14);
+  background: linear-gradient(180deg, #fff 35%, rgba(var(--tc), .07) 100%);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, .04), 0 10px 24px -14px rgba(var(--tc), .35);
+  transition: transform .2s cubic-bezier(.2,.7,.3,1), box-shadow .2s, border-color .2s; }
+.ig-tile.is-big.t1 { --tc: 47, 167, 123; }
+.ig-tile.is-big.t2 { --tc: 236, 138, 59; }
+.ig-tile.is-big.t3 { --tc: 138, 99, 224; }
+.ig-tile.is-big:hover { transform: translateY(-3px); border-color: rgba(var(--tc), .35);
+  background: linear-gradient(180deg, #fff 30%, rgba(var(--tc), .1) 100%);
+  box-shadow: 0 2px 4px rgba(16, 24, 40, .04), 0 18px 32px -16px rgba(var(--tc), .5); }
+.ig-tile.is-big .ic { box-shadow: 0 0 0 1px rgba(var(--tc), .12) inset; }
+.ig-tile.is-big .wm { opacity: .2; }
+.ig-tile.is-big:hover .wm { opacity: .3; }
+:root[data-theme="dark"] .ig-tile.is-big { background: linear-gradient(180deg, var(--bg-surface) 35%, rgba(var(--tc), .12) 100%); }
+:root[data-theme="dark"] .ig-tile.is-big:hover { background: linear-gradient(180deg, var(--bg-surface) 30%, rgba(var(--tc), .18) 100%); }
+/* thanh thông báo: đổi nội dung bằng mờ dần + trượt nhẹ */
+.ig-ann .tx, .ig-ann .cta, .ig-ann .pg .gm-num { transition: opacity .36s ease, transform .36s ease; }
+.ig-ann.is-out .tx, .ig-ann.is-out .cta, .ig-ann.is-out .pg .gm-num { opacity: 0; transform: translateY(-4px); }
+.ig-ann.is-in-start .tx, .ig-ann.is-in-start .cta, .ig-ann.is-in-start .pg .gm-num { opacity: 0; transform: translateY(4px); transition: none; }
+.ig-ann > div { transition: background-color .5s ease, color .5s ease; }
+@media (prefers-reduced-motion: reduce) { .ig-ann .tx, .ig-ann .cta, .ig-ann .pg .gm-num { transition: none; } }
